@@ -1,0 +1,6 @@
+services:
+  text2diagram-backend:
+    image: ${DOCKER_REGISTRY-}text2diagrambackend
+    build:
+      context: .
+      dockerfile: Text2Diagram-Backend/Dockerfile

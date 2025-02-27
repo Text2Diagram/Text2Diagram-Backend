@@ -1,6 +1,0 @@
-@Text2Diagram_Backend_HostAddress = http://localhost:5092
-
-GET {{Text2Diagram_Backend_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

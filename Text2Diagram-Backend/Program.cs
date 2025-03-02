@@ -1,5 +1,6 @@
 using LangChain.Providers.Ollama;
 using Promotion.Api;
+using Text2Diagram_Backend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ builder.Services.AddProblemDetails();
 
 // Configure Ollama
 builder.Services.AddSingleton<OllamaProvider>();
+builder.Services.AddSingleton<SequenceDiagramGenerator>();
+builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
 
 
 var app = builder.Build();

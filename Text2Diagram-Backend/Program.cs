@@ -1,3 +1,4 @@
+using LangChain.Providers.Ollama;
 using Promotion.Api;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,10 @@ builder.Services.AddSwaggerGen();
 // Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+// Configure Ollama
+builder.Services.AddSingleton<OllamaProvider>();
+
 
 var app = builder.Build();
 

@@ -1,15 +1,18 @@
-﻿namespace Text2Diagram_Backend;
+﻿using Text2Diagram_Backend.Abstractions;
+using Text2Diagram_Backend.Flowchart;
+
+namespace Text2Diagram_Backend.Implementations;
 
 public class DiagramGeneratorFactory : IDiagramGeneratorFactory
 {
     private readonly Dictionary<DiagramType, IDiagramGenerator> generators;
 
     public DiagramGeneratorFactory(
-        SequenceDiagramGenerator sequenceDiagramGenerator)
+        FlowchartDiagramGenerator flowchartDiagramGenerator)
     {
         generators = new Dictionary<DiagramType, IDiagramGenerator>
         {
-            { DiagramType.Sequence, sequenceDiagramGenerator }
+            { DiagramType.Flowchart, flowchartDiagramGenerator }
         };
     }
 

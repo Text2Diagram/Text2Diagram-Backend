@@ -1,6 +1,9 @@
 using LangChain.Providers.Ollama;
 using Promotion.Api;
-using Text2Diagram_Backend;
+using Text2Diagram_Backend.Abstractions;
+using Text2Diagram_Backend.Common;
+using Text2Diagram_Backend.Flowchart;
+using Text2Diagram_Backend.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +20,13 @@ builder.Services.AddProblemDetails();
 
 // Configure Ollama
 builder.Services.AddSingleton<OllamaProvider>();
-builder.Services.AddSingleton<SequenceDiagramGenerator>();
+builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
+
+
+builder.Services.AddSingleton<UseCaseSpecAnalyzer>();
+
+builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
 
 
 var app = builder.Build();

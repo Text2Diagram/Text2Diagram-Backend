@@ -4,3 +4,30 @@ services:
     build:
       context: .
       dockerfile: Text2Diagram-Backend/Dockerfile
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_MODELS=/models
+    volumes:
+      - ollama_models:/models 
+    networks:
+      - ollama_network
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      /usr/bin/ollama serve &
+      sleep 5 &&
+      /usr/bin/ollama pull qwen2.5:1.5b &&
+      /usr/bin/ollama run qwen2.5:1.5b
+      "
+
+volumes:
+  ollama_models:
+ 
+networks:
+  ollama_network:

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Text2Diagram_Backend.Abstractions;
 
 namespace Text2Diagram_Backend.Controllers;
 
@@ -31,4 +32,5 @@ public class DiagramsController : ControllerBase
         var result = await diagramGenerator.GenerateAsync(request.Input);
         return Ok(result);
     }
+
 }

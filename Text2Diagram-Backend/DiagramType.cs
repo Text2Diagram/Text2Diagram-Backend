@@ -5,7 +5,7 @@ public enum DiagramType
     Sequence,
     Class,
     UseCase,
-    Activity,
     State,
-    ER
+    ER,
+    Flowchart
 }

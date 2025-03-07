@@ -1,4 +1,4 @@
-﻿namespace Text2Diagram_Backend;
+﻿namespace Text2Diagram_Backend.Abstractions;
 
 public interface IDiagramGenerator
 {

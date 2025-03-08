@@ -1,4 +1,4 @@
-﻿namespace Text2Diagram_Backend.Common;
+﻿namespace Text2Diagram_Backend.Common.Implementations;
 
 public record UseCaseElements(
     List<string> Actors,

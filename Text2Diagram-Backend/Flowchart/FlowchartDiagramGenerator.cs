@@ -2,8 +2,8 @@
 using LangChain.Providers.Ollama;
 using System.Text;
 using System.Text.Json;
-using Text2Diagram_Backend.Abstractions;
-using Text2Diagram_Backend.Common;
+using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Implementations;
 
 namespace Text2Diagram_Backend.Flowchart;
 
@@ -11,14 +11,14 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 {
     private readonly OllamaChatModel llm;
     private readonly ILogger<FlowchartDiagramGenerator> logger;
-    private readonly UseCaseSpecAnalyzer analyzer;
+    private readonly IAnalyzer<UseCaseElements> analyzer;
     private readonly ISyntaxValidator syntaxValidator;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
         OllamaProvider provider,
         IConfiguration configuration,
-        UseCaseSpecAnalyzer analyzer,
+        IAnalyzer<UseCaseElements> analyzer,
         ISyntaxValidator syntaxValidator)
     {
         var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");

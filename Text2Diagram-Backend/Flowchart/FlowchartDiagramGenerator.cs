@@ -61,11 +61,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         logger.LogInformation("Flowchart Generation Structured Data: {jsonData}", jsonData);
 
         return $"""
-        You are a Flowchart Generator agent. Your task is to generate a valid Mermaid.js flowchart based on the structured data provided.
-
-        Documentation: 
-        The following documentation outlines the syntax and rules for creating Mermaid.js flowcharts. You must strictly adhere to this syntax:
-        {guidance}
+        You are a Flowchart Generator agent. Generate a Mermaid.js flowchart strictly following these rules:
 
         Mapping Rules:
         1. Actors: Represent actors as swimlanes or labels.
@@ -76,17 +72,17 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         6. Alternative Flows: Group alternative flows into subgraphs.
         7. Exception Flows: Group exception flows into subgraphs.
 
+        Syntax Documentation: 
+        The following documentation outlines the syntax and rules for creating Mermaid.js flowcharts. You must strictly adhere to this syntax:
+        {guidance}
+
         Instructions:
-        1. Use ONLY the provided structured data to create the flowchart.
-        2. Follow the syntax and guidelines from the documentation precisely.
+        1. Strictly use the structured data below. Do NOT include steps from other use cases.
+        2. Follow the syntax rules from the documentation exactly.
         3. Ensure the output is a valid Mermaid.js code block.
-        4. Do NOT include any explanations, comments, or additional text outside the Mermaid.js code.
-        5. Use the following conventions:
-            - Start with a Terminator node for the trigger.
-            - Connect steps sequentially in the main flow.
-            - Use decision nodes for branching logic.
-            - Group alternative and exception flows into subgraphs.
-            - Link alternative and exception flows back to the main flow where applicable.
+        4. Do not include any explanations, comments, or additional text outside the Mermaid.js code.
+        5. Ensure all nodes and edges are connected logically.
+        6. Only include steps from the structured data. Do not add extra steps or flows.
 
         """ +
         """
@@ -141,19 +137,22 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
         %% Link to Alternative Flow from Main Flow
         C -->|Forgot Password| G
+
+
         """ +
         $"""
-        Input:
+        # Structured Data:
         {jsonData}
-        Generate and return ONLY the Mermaid.js code. Do NOT include explanations, comments, or additional text outside the Mermaid.js code.
-        Output:
+
+        Generate and return only the Mermaid.js code. Do not include explanations, comments, or additional text outside the Mermaid.js code.
         """;
     }
 
     private string PostProcess(string output)
     {
+        output = output.Trim();
         return output.Contains("```mermaid")
-                ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[0]
+                ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
                 : output;
 
     }

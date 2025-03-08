@@ -25,6 +25,8 @@ public class UseCaseSpecAnalyzer
         var prompt = GetAnalysisPrompt(useCaseSpec);
         var response = await llm.GenerateAsync(prompt);
 
+        logger.LogInformation("Use Case Analysis Response: {response}", response);
+
         var useCaseFlows = ParseAndValidateResponse(response);
         if (useCaseFlows == null)
         {
@@ -37,8 +39,9 @@ public class UseCaseSpecAnalyzer
     private string GetAnalysisPrompt(string useCaseSpec)
     {
         return $"""
-            You are a Use Case Analyzer agent. Extract structured flows from this use case specification:
+            You are a Use Case Analyzer agent. Extract elements described below from this use case specification:
             {useCaseSpec}
+
             """ +
             """
             Rules: 
@@ -50,7 +53,7 @@ public class UseCaseSpecAnalyzer
             6. AlternativeFlows: Map alternative paths (e.g., "Forgot Password").
             7. ExceptionFlows: Map error paths (e.g., "Invalid Password").
 
-            Output JSON with these fields:
+            The output should be in JSON format with the following fields:
             {
               "Actors": [actor1, actor2...],
               "Triggers": [trigger1, trigger2...],
@@ -89,7 +92,7 @@ public class UseCaseSpecAnalyzer
                 - User clicks "Submit" button.
                 - System sends reset email.  
 
-            Example output:  
+            Example output for the above example use case specification:  
             {
               "Actors": ["User", "System"],
               "Triggers": ["User clicks 'Login' button"],
@@ -132,8 +135,9 @@ public class UseCaseSpecAnalyzer
     {
         try
         {
+            response = response.Trim();
             var json = response.Contains("```json")
-                ? response.Split(["```json", "```"], StringSplitOptions.RemoveEmptyEntries)[0]
+                ? response.Split(["```json", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
                 : response;
 
             logger.LogInformation("Use Case Analysis Response: {response}", json);

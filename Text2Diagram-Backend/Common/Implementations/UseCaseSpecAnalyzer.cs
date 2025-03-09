@@ -1,10 +1,11 @@
 ﻿using LangChain.Providers;
 using LangChain.Providers.Ollama;
 using System.Text.Json;
+using Text2Diagram_Backend.Common.Abstractions;
 
-namespace Text2Diagram_Backend.Common;
+namespace Text2Diagram_Backend.Common.Implementations;
 
-public class UseCaseSpecAnalyzer
+public class UseCaseSpecAnalyzer : IAnalyzer<UseCaseElements>
 {
     private readonly OllamaChatModel llm;
     private readonly ILogger<UseCaseSpecAnalyzer> logger;
@@ -19,10 +20,10 @@ public class UseCaseSpecAnalyzer
         this.logger = logger;
     }
 
-    public async Task<UseCaseElements> AnalyzeAsync(string useCaseSpec)
+    public async Task<UseCaseElements> AnalyzeAsync(string spec)
     {
 
-        var prompt = GetAnalysisPrompt(useCaseSpec);
+        var prompt = GetAnalysisPrompt(spec);
         var response = await llm.GenerateAsync(prompt);
 
         logger.LogInformation("Use Case Analysis Response: {response}", response);

@@ -1,6 +1,6 @@
-﻿using Text2Diagram_Backend.Abstractions;
+﻿using Text2Diagram_Backend.Common.Abstractions;
 
-namespace Text2Diagram_Backend.Common;
+namespace Text2Diagram_Backend.Common.Implementations;
 
 public class MermaidSyntaxValidator : ISyntaxValidator
 {

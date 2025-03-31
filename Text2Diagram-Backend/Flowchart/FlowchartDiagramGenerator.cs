@@ -151,9 +151,16 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private string PostProcess(string output)
     {
         output = output.Trim();
-        return output.Contains("```mermaid")
-                ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
-                : output;
+        var json = "";
+        if (output.Contains("```mermaid"))
+        {
+            var parts = output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries);
+            json = parts[0];
+        }
+        return json;
+        //return output.Contains("```mermaid")
+        //        ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
+        //        : output;
 
     }
 }

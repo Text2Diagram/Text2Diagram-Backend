@@ -136,10 +136,16 @@ public class UseCaseSpecAnalyzer
         try
         {
             response = response.Trim();
-            var json = response.Contains("```json")
-                ? response.Split(["```json", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
-                : response;
-
+            var json = "";
+            //var json = response.Contains("```json")
+            //    ? response.Split(["```json", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
+            //    : response;
+            if (response.Contains("```json"))
+            {
+                var parts = response.Split(new[] { "```json", "```" }, StringSplitOptions.RemoveEmptyEntries);
+                json = parts[0];
+            }
+            
             logger.LogInformation("Use Case Analysis Response: {response}", json);
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

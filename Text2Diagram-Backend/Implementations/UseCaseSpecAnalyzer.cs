@@ -137,7 +137,7 @@ public class UseCaseSpecAnalyzer
         {
             response = response.Trim();
             var json = response.Contains("```json")
-                ? response.Split(["```json", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
+                ? response.Split(["```json", "```"], StringSplitOptions.RemoveEmptyEntries)[0]
                 : response;
 
             logger.LogInformation("Use Case Analysis Response: {response}", json);

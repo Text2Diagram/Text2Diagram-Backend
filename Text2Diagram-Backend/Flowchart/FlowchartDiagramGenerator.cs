@@ -152,7 +152,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         output = output.Trim();
         return output.Contains("```mermaid")
-                ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
+                ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[0]
                 : output;
 
     }

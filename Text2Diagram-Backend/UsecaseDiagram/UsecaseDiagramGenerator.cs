@@ -12,6 +12,7 @@ using Text2Diagram_Backend.Abstractions;
 using Text2Diagram_Backend.Common;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Text2Diagram_Backend.Common.Abstractions;
 
 namespace Text2Diagram_Backend.UsecaseDiagram;
 

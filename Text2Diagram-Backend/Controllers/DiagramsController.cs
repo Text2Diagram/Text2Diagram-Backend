@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Text2Diagram_Backend.Abstractions;
+using Text2Diagram_Backend.Common.Abstractions;
 
 namespace Text2Diagram_Backend.Controllers;
 

@@ -1,5 +1,6 @@
 ﻿using Grpc.Net.Client;
 using Text2Diagram_Backend.Abstractions;
+using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Protos;
 
 namespace Text2Diagram_Backend.Common;

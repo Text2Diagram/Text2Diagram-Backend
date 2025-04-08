@@ -1,6 +1,5 @@
 ﻿using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Flowchart;
-using Text2Diagram_Backend.State;
 
 namespace Text2Diagram_Backend.Common.Implementations;
 
@@ -9,8 +8,7 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
     private readonly Dictionary<DiagramType, IDiagramGenerator> generators;
 
     public DiagramGeneratorFactory(
-        FlowchartDiagramGenerator flowchartDiagramGenerator,
-        StateDiagramGenerator stateDiagramGenerator)
+        FlowchartDiagramGenerator flowchartDiagramGenerator)
     {
         generators = new Dictionary<DiagramType, IDiagramGenerator>
         {
@@ -18,7 +16,6 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
             //{ DiagramType.Sequence,  },
             //{ DiagramType.Class,  },
             //{ DiagramType.UseCase,  },
-            { DiagramType.State, stateDiagramGenerator },
             //{ DiagramType.ER,  }
         };
     }

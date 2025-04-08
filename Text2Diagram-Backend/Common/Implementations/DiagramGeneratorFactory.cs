@@ -1,4 +1,5 @@
 ﻿using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Flowchart;
 
 namespace Text2Diagram_Backend.Common.Implementations;

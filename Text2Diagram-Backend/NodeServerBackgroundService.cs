@@ -17,7 +17,7 @@ public class NodeServerBackgroundService : BackgroundService
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = "node", // Ensure 'node' is in your PATH environment variable
+            FileName = "node",
             Arguments = "validationServer.js",
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -38,10 +38,9 @@ public class NodeServerBackgroundService : BackgroundService
         return base.StartAsync(cancellationToken);
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        stoppingToken.WaitHandle.WaitOne();
-        return Task.CompletedTask;
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     public override Task StopAsync(CancellationToken cancellationToken)

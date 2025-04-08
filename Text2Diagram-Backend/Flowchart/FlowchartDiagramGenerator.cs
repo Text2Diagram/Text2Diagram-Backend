@@ -39,30 +39,47 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         var elements = await analyzer.AnalyzeAsync(input);
 
-        var prompt = await GetPromptAsync(elements);
-        var result = await llm.GenerateAsync(prompt);
 
-        logger.LogInformation("Flowchart Generation Result: {result}", result);
+        string result = string.Empty;
+        string validationError = string.Empty;
 
-        var isSyntaxValid = await syntaxValidator.ValidateAsync(result);
+        var prompt = GetPrompt(elements);
+        result = PostProcess(await llm.GenerateAsync(prompt));
 
-        return PostProcess(result);
+        do
+        {
+            logger.LogInformation("Flowchart Generation Result: {result}", result);
+
+            var validationResult = await syntaxValidator.ValidateAsync(result);
+
+            if (validationResult.IsValid)
+                break;
+
+            validationError = validationResult.ErrorMessage;
+            logger.LogWarning("Syntax invalid. Retrying with correction. Error: {validationError}", validationError);
+
+            prompt = await GetCorrectionPromptAsync(result, validationError);
+            result = PostProcess(await llm.GenerateAsync(prompt));
+        } while (true);
+
+        return result;
     }
 
 
-    private async Task<string> GetPromptAsync(UseCaseElements useCaseElements)
+    private string GetPrompt(UseCaseElements useCaseElements)
     {
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Flowchart", "flowchart.md");
-        var guidance = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
-
         var jsonData = JsonSerializer.Serialize(
             useCaseElements,
             new JsonSerializerOptions { WriteIndented = true });
 
         return $"""
-        You are a Flowchart Generator. Create a Mermaid.js flowchart from the structured data below, following these STRICT RULES:
+        You are a Flowchart Generator. Create a Mermaid.js flowchart from the structured data below, following INSTRUCTIONS:
+        # INPUT:
+        {jsonData}
 
-        INSTRUCTIONS:
+        Generate and return only the complete Mermaid.js code block with no additional text.
+
+        # INSTRUCTIONS:
         1. Actors: Represent each actor as a labeled swimlane or node.
         2. Triggers: Convert triggers into Terminator nodes (stadium shape).
         3. Main Flow: Render every step in the "MainFlow" as a rectangle (process node) and ensure sequential connections.
@@ -73,10 +90,11 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         8. Output Format: Return only the Mermaid.js code block. Do not include any comments, explanations, or extra text outside of the Mermaid.js code.
         
         Below is an example input and the corresponding expected structure. Use it as a reference for your formatting:
-
         """ +
         """
-        EXAMPLE INPUT:
+        # EXAMPLE: 
+        Do NOT copy from the example below. Use it only for formatting structure. Only generate diagram based on the actual INPUT data above.
+        EXAMPLE INPUT 
         {
           "Actors": ["User", "System"],
           "Triggers": ["User clicks 'Login' button"],
@@ -127,14 +145,24 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
         %% Link to Alternative Flow from Main Flow
         C -->|Forgot Password| G
+        """;
+    }
 
+    private async Task<string> GetCorrectionPromptAsync(string previousMermaidCode, string validationError)
+    {
+        var filePath = Path.Combine(AppContext.BaseDirectory, "Flowchart", "flowchart.md");
+        var guidance = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
 
-        """ +
-        $"""
-        # INPUT:
-        {jsonData}
-
-        Generate and return only the complete Mermaid.js code block with no additional text.
+        return $"""
+        You previously generated the following Mermaid.js flowchart:
+        ```mermaid
+        {previousMermaidCode}
+        ```
+        However, it contains syntax errors. The validator returned this error:
+        {validationError}
+        Please correct the Mermaid.js syntax based on this feedback and the syntax reference below. Return only the corrected Mermaid.js code block without any explanation.
+        # INSTRUCTIONS:
+        {guidance}
         """;
     }
 

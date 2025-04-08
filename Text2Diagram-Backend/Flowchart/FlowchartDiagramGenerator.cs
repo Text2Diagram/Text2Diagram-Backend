@@ -2,8 +2,9 @@
 using LangChain.Providers.Ollama;
 using System.Text;
 using System.Text.Json;
-using Text2Diagram_Backend.Common.Abstractions;
-using Text2Diagram_Backend.Common.Implementations;
+using System.Text.RegularExpressions;
+using Text2Diagram_Backend.Abstractions;
+using Text2Diagram_Backend.Common;
 
 namespace Text2Diagram_Backend.Flowchart;
 
@@ -11,14 +12,14 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 {
     private readonly OllamaChatModel llm;
     private readonly ILogger<FlowchartDiagramGenerator> logger;
-    private readonly IAnalyzer<UseCaseElements> analyzer;
+    private readonly UseCaseSpecAnalyzer analyzer;
     private readonly ISyntaxValidator syntaxValidator;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
         OllamaProvider provider,
         IConfiguration configuration,
-        IAnalyzer<UseCaseElements> analyzer,
+        UseCaseSpecAnalyzer analyzer,
         ISyntaxValidator syntaxValidator)
     {
         var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
@@ -29,7 +30,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     }
 
     /// <summary>
-    /// 
+    /// Generates a flowchart diagram in Mermaid.js format from use case specifications or BPMN files.
     /// </summary>
     /// <param name="input">Use case specifications or BPMN files.</param>
     /// <returns>Generated Mermaid Code for Flowchart Diagram</returns>
@@ -38,55 +39,62 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         var elements = await analyzer.AnalyzeAsync(input);
 
-        var prompt = await GetPromptAsync(elements);
-        var result = await llm.GenerateAsync(prompt);
 
-        logger.LogInformation("Flowchart Generation Result: {result}", result);
+        string result = string.Empty;
+        string validationError = string.Empty;
 
-        //var isSyntaxValid = await syntaxValidator.ValidateAsync(result);
+        var prompt = GetPrompt(elements);
+        result = PostProcess(await llm.GenerateAsync(prompt));
 
-        return PostProcess(result);
+        do
+        {
+            logger.LogInformation("Flowchart Generation Result: {result}", result);
+
+            var validationResult = await syntaxValidator.ValidateAsync(result);
+
+            if (validationResult.IsValid)
+                break;
+
+            validationError = validationResult.ErrorMessage;
+            logger.LogWarning("Syntax invalid. Retrying with correction. Error: {validationError}", validationError);
+
+            prompt = await GetCorrectionPromptAsync(result, validationError);
+            result = PostProcess(await llm.GenerateAsync(prompt));
+        } while (true);
+
+        return result;
     }
 
 
-    private async Task<string> GetPromptAsync(UseCaseElements useCaseElements)
+    private string GetPrompt(UseCaseElements useCaseElements)
     {
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Flowchart", "flowchart.md");
-        var guidance = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
-
         var jsonData = JsonSerializer.Serialize(
             useCaseElements,
             new JsonSerializerOptions { WriteIndented = true });
 
-        logger.LogInformation("Flowchart Generation Structured Data: {jsonData}", jsonData);
-
         return $"""
-        You are a Flowchart Generator agent. Generate a Mermaid.js flowchart strictly following these rules:
+        You are a Flowchart Generator. Create a Mermaid.js flowchart from the structured data below, following INSTRUCTIONS:
+        # INPUT:
+        {jsonData}
 
-        Mapping Rules:
-        1. Actors: Represent actors as swimlanes or labels.
-        2. Triggers: Map triggers to Terminator nodes (stadium shape).
-        3. Main Flow Steps: Represent steps as rectangles (process nodes).
-        4. Decisions: Use diamonds for decision points.
-        5. Data Inputs/Outputs: Use parallelograms for data inputs/outputs.
-        6. Alternative Flows: Group alternative flows into subgraphs.
-        7. Exception Flows: Group exception flows into subgraphs.
+        Generate and return only the complete Mermaid.js code block with no additional text.
 
-        Syntax Documentation: 
-        The following documentation outlines the syntax and rules for creating Mermaid.js flowcharts. You must strictly adhere to this syntax:
-        {guidance}
-
-        Instructions:
-        1. Strictly use the structured data below. Do NOT include steps from other use cases.
-        2. Follow the syntax rules from the documentation exactly.
-        3. Ensure the output is a valid Mermaid.js code block.
-        4. Do not include any explanations, comments, or additional text outside the Mermaid.js code.
-        5. Ensure all nodes and edges are connected logically.
-        6. Only include steps from the structured data. Do not add extra steps or flows.
-
+        # INSTRUCTIONS:
+        1. Actors: Represent each actor as a labeled swimlane or node.
+        2. Triggers: Convert triggers into Terminator nodes (stadium shape).
+        3. Main Flow: Render every step in the "MainFlow" as a rectangle (process node) and ensure sequential connections.
+        4. Decisions: Identify decision points from the "Decisions" list and represent them as diamond-shaped nodes. Link decision outcomes logically.
+        5. Alternative Flows: For each entry in "AlternativeFlows", create a subgraph named exactly as the key (use underscores instead of spaces if necessary). Include all steps in sequence and ensure they connect back to the main flow at the appropriate point.
+        6. Exception Flows: For each entry in "ExceptionFlows", create a subgraph named exactly as the key. Represent error conditions as branches off of the relevant decision or flow step, ensuring proper feedback loops where indicated.
+        7. Syntax Requirements: Use the syntax rules specified in the documentation below exactly. Do not add extra nodes or flows that are not present in the JSON data.
+        8. Output Format: Return only the Mermaid.js code block. Do not include any comments, explanations, or extra text outside of the Mermaid.js code.
+        
+        Below is an example input and the corresponding expected structure. Use it as a reference for your formatting:
         """ +
         """
-        Example Input:
+        # EXAMPLE: 
+        Do NOT copy from the example below. Use it only for formatting structure. Only generate diagram based on the actual INPUT data above.
+        EXAMPLE INPUT 
         {
           "Actors": ["User", "System"],
           "Triggers": ["User clicks 'Login' button"],
@@ -111,7 +119,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
           "Decisions": ["System validates credentials"]
         }
 
-        Example Output:
+        EXAMPLE OUTPUT:
         graph TD
         %% Start Terminator Node
         Start([Start: User clicks 'Login']) --> A[User enters username]
@@ -137,23 +145,37 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
         %% Link to Alternative Flow from Main Flow
         C -->|Forgot Password| G
+        """;
+    }
 
+    private async Task<string> GetCorrectionPromptAsync(string previousMermaidCode, string validationError)
+    {
+        var filePath = Path.Combine(AppContext.BaseDirectory, "Flowchart", "flowchart.md");
+        var guidance = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
 
-        """ +
-        $"""
-        # Structured Data:
-        {jsonData}
-
-        Generate and return only the Mermaid.js code. Do not include explanations, comments, or additional text outside the Mermaid.js code.
+        return $"""
+        You previously generated the following Mermaid.js flowchart:
+        ```mermaid
+        {previousMermaidCode}
+        ```
+        However, it contains syntax errors. The validator returned this error:
+        {validationError}
+        Please correct the Mermaid.js syntax based on this feedback and the syntax reference below. Return only the corrected Mermaid.js code block without any explanation.
+        # INSTRUCTIONS:
+        {guidance}
         """;
     }
 
     private string PostProcess(string output)
     {
-        output = output.Trim();
-        return output.Contains("```mermaid")
-                ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
-                : output;
+        var match = Regex.Match(output, @"```mermaid\s*([\s\S]*?)\s*```");
+        var extracted = match.Groups[1].Value.Trim();
 
+        if (string.IsNullOrWhiteSpace(extracted))
+        {
+            extracted = match.Groups[0].Value.Trim();
+        }
+
+        return extracted;
     }
 }

@@ -2,5 +2,5 @@
 
 public interface ISyntaxValidator
 {
-    Task<bool> ValidateAsync(string code);
+    Task<DiagramValidationResult> ValidateAsync(string code);
 }

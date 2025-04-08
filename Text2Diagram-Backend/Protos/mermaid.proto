@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "Text2Diagram_Backend.Protos";
+
+package mermaid;
+
+service MermaidService {
+    rpc ValidateSyntax (MermaidRequest) returns (MermaidResponse);
+}
+
+message MermaidRequest {
+    string syntax = 1;
+}
+
+message MermaidResponse {
+    bool valid = 1;
+    string message = 2;
+}

@@ -1,5 +1,6 @@
 using LangChain.Providers.Ollama;
 using Promotion.Api;
+using Text2Diagram_Backend;
 using Text2Diagram_Backend.Abstractions;
 using Text2Diagram_Backend.Common;
 using Text2Diagram_Backend.Flowchart;
@@ -8,6 +9,7 @@ using Text2Diagram_Backend.Implementations;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddHostedService<NodeServerBackgroundService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -26,7 +26,7 @@ namespace Text2Diagram_Backend.Controllers
 		{
 			try
 			{
-				var result = _dbContext.Diagrams.Skip(page).Take(pageSize).ToList();
+				var result = _dbContext.Diagrams.Skip((page-1)*pageSize).Take(pageSize).ToList();
 				return Ok(FormatData.FormatDataFunc(page, pageSize, result));
 			}
 			catch (Exception ex)

@@ -6,6 +6,7 @@ using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Flowchart;
+using Text2Diagram_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Configure Ollama
 builder.Services.AddSingleton<OllamaProvider>();

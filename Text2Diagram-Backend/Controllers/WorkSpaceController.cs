@@ -22,108 +22,65 @@ namespace Text2Diagram_Backend.Controllers
 		[HttpGet]
 		public IActionResult GetAll(int page, int pageSize)
 		{
-			try
-			{
-				var result = _dbContext.Workspaces.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-				return Ok(FormatData.FormatDataFunc(page, pageSize, result));
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			var result = _dbContext.Workspaces.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+			return Ok(FormatData.FormatDataFunc(page, pageSize, result));
 		}
 
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetSingle(Guid id)
 		{
-			try
-			{
-				var result = await _dbContext.Workspaces.FindAsync(id);
-				return Ok(FormatData.FormatDataFunc(0, 0, result));
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			var result = await _dbContext.Workspaces.FindAsync(id);
+			return Ok(FormatData.FormatDataFunc(0, 0, result));
 		}
 
 		[HttpPost]
 		public async Task<IActionResult> Create(WorkspaceVM item)
 		{
-			try
-			{
-				var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
-				_dbContext.Workspaces.Add(newItem);
-				await _dbContext.SaveChangesAsync();
-				var result = await _dbContext.Workspaces.FindAsync(newItem.Id);
-				return Ok(FormatData.FormatDataFunc(0, 0, result));
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
+			_dbContext.Workspaces.Add(newItem);
+			await _dbContext.SaveChangesAsync();
+			var result = await _dbContext.Workspaces.FindAsync(newItem.Id);
+			return Ok(FormatData.FormatDataFunc(0, 0, result));
 		}
 
 		[HttpPut]
 		public async Task<IActionResult> Update(WorkspaceVM item)
 		{
-			try
-			{
-				var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
-				var editItem = _dbContext.Workspaces.Single(x => x.Id == item.Id);
-				if (editItem == null)
-					return BadRequest("Không tồn tại dữ liệu");
-				_dbContext.Workspaces.Add(newItem);
-				_mapper.Map<WorkspaceVM, Workspace>(item, editItem);
-				await _dbContext.SaveChangesAsync();
-				return NoContent();
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
+			var editItem = _dbContext.Workspaces.Single(x => x.Id == item.Id);
+			if (editItem == null)
+				return BadRequest("Không tồn tại dữ liệu");
+			_mapper.Map<WorkspaceVM, Workspace>(item, editItem);
+			await _dbContext.SaveChangesAsync();
+			return NoContent();
 		}
 
 		[HttpPatch("{id}")]
 		public ActionResult PartialUpdate(Guid id, [FromBody] JsonPatchDocument patchModel)
 		{
-			try
-			{
-				var editItem = _dbContext.Workspaces.Single(x => x.Id == id);
-				if (editItem == null)
-					return BadRequest("Không tồn tại dữ liệu.");
+			var editItem = _dbContext.Workspaces.Single(x => x.Id == id);
+			if (editItem == null)
+				return BadRequest("Không tồn tại dữ liệu.");
 
-				var itemVm = _mapper.Map<Workspace, WorkspaceVM>(editItem);
+			var itemVm = _mapper.Map<Workspace, WorkspaceVM>(editItem);
 
-				patchModel.ApplyTo(itemVm);
+			patchModel.ApplyTo(itemVm);
 
-				_mapper.Map<WorkspaceVM, Workspace>(itemVm, editItem);
+			_mapper.Map<WorkspaceVM, Workspace>(itemVm, editItem);
 
-				_dbContext.SaveChangesAsync();
-				return Ok();
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			_dbContext.SaveChangesAsync();
+			return Ok();
 		}
 
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> Delete(Guid id)
 		{
-			try
-			{
-				var editItem = _dbContext.Workspaces.Single(x => x.Id == id);
-				if (editItem == null)
-					return BadRequest("Không tồn tại dữ liệu");
-				_dbContext.Workspaces.Remove(editItem);
-				await _dbContext.SaveChangesAsync();
-				return NoContent();
-			}
-			catch (Exception ex)
-			{
-				return BadRequest(ex.Message);
-			}
+			var editItem = _dbContext.Workspaces.Single(x => x.Id == id);
+			if (editItem == null)
+				return BadRequest("Không tồn tại dữ liệu");
+			_dbContext.Workspaces.Remove(editItem);
+			await _dbContext.SaveChangesAsync();
+			return NoContent();
 		}
 	}
 }

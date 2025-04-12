@@ -2,8 +2,8 @@
 {
 	public class WorkspaceVM
 	{
-		public Guid Id { get; init; }
-		public string Name { get; private set; } = string.Empty;
+		public Guid Id { get; set; }
+		public string Name { get; set; } = string.Empty;
 		public string? Description { get; set; }
 		public DateTime CreatedAt { get; init; }
 		public DateTime? UpdatedAt { get; set; }

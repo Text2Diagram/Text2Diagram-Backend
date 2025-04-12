@@ -4,8 +4,8 @@ namespace Text2Diagram_Backend.ViewModels
 {
 	public class DiagramVM
 	{
-		public Guid Id { get; private set; } = Guid.NewGuid();
-		public string Title { get; private set; } = string.Empty;
+		public Guid Id {  get; set; }
+		public string Title { get; set; } = string.Empty;
 		public string? Description { get; set; }
 		public string DiagramData { get; set; } = string.Empty;
 		public DiagramType DiagramType { get; init; }

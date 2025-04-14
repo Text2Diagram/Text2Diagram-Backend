@@ -30,7 +30,7 @@ namespace Text2Diagram_Backend.Controllers
 		public async Task<IActionResult> GetSingle(Guid id)
 		{
 			var result = await _dbContext.Shares.FindAsync(id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
+			return Ok(FormatData.FormatDataFunc(0, 0,	result));
 		}
 
 		[HttpPost]

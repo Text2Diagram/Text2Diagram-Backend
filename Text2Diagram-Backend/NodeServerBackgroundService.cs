@@ -13,32 +13,43 @@ public class NodeServerBackgroundService : BackgroundService
         this.logger = logger;
     }
 
-    public override Task StartAsync(CancellationToken cancellationToken)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "node",
-            Arguments = "validationServer.js",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
+	public override Task StartAsync(CancellationToken cancellationToken)
+	{
+		try
+		{
+			logger.LogInformation("Starting Node.js validation server...");
 
-        nodeProcess = new Process { StartInfo = startInfo };
-        nodeProcess.OutputDataReceived += (sender, args) => logger.LogInformation(args.Data);
-        nodeProcess.ErrorDataReceived += (sender, args) => logger.LogError(args.Data);
+			var startInfo = new ProcessStartInfo
+			{
+				FileName = "node",
+				Arguments = "validationServer.js",
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				WorkingDirectory = "/home/kuro/Text2Diagram-Backend/Text2Diagram-Backend" // Đã sửa đúng path
+			};
 
-        nodeProcess.Start();
-        nodeProcess.BeginOutputReadLine();
-        nodeProcess.BeginErrorReadLine();
+			nodeProcess = new Process { StartInfo = startInfo };
+			nodeProcess.OutputDataReceived += (sender, args) => logger.LogInformation(args.Data);
+			nodeProcess.ErrorDataReceived += (sender, args) => logger.LogError(args.Data);
 
-        logger.LogInformation("Validation server started.");
+			nodeProcess.Start();
+			nodeProcess.BeginOutputReadLine();
+			nodeProcess.BeginErrorReadLine();
 
-        return base.StartAsync(cancellationToken);
-    }
+			logger.LogInformation("Validation server started.");
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+			return base.StartAsync(cancellationToken);
+		}
+		catch (Exception ex)
+		{
+			logger.LogError(ex, "Failed to start Node.js process.");
+			throw;
+		}
+	}
+
+	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }

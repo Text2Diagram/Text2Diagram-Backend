@@ -29,12 +29,13 @@ builder.Services.AddProblemDetails();
 
 // Configure Ollama
 builder.Services.AddSingleton<OllamaProvider>();
-builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzer>();
-
 builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
 
+// Register flowchart components
+builder.Services.AddSingleton<FlowchartDiagramGenerator>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
 
 var app = builder.Build();
 

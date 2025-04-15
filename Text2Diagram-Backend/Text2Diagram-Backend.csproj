@@ -11,7 +11,18 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Rag\**" />
+	  <Content Remove="Rag\**" />
+	  <EmbeddedResource Remove="Rag\**" />
+	  <None Remove="Rag\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="LangChain.Databases.Sqlite" Version="0.17.0" />
+		<PackageReference Include="LangChain.DocumentLoaders.Abstractions" Version="0.17.0" />
+		<PackageReference Include="LangChain.DocumentLoaders.Html" Version="0.17.0" />
 		<PackageReference Include="LangChain.Providers.Ollama" Version="0.17.0" />
+		<PackageReference Include="LangChain.Splitters.CSharp" Version="0.17.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
 		  <PrivateAssets>all</PrivateAssets>
@@ -31,12 +42,6 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Flowchart\flowchart.md">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 
 	<ItemGroup>

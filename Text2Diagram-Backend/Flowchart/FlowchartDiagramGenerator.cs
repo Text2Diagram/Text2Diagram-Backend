@@ -1,26 +1,25 @@
-﻿using LangChain.Providers;
 using LangChain.Providers.Ollama;
 using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using Text2Diagram_Backend.Common;
 using Text2Diagram_Backend.Common.Abstractions;
-using Text2Diagram_Backend.Common.Implementations;
 
 namespace Text2Diagram_Backend.Flowchart;
 
+/// <summary>
+/// Generates flowchart diagrams in Mermaid.js format from structured data
+/// extracted from use case specifications or natural language text.
+/// </summary>
 public class FlowchartDiagramGenerator : IDiagramGenerator
 {
     private readonly OllamaChatModel llm;
     private readonly ILogger<FlowchartDiagramGenerator> logger;
-    private readonly UseCaseSpecAnalyzer analyzer;
+    private readonly IAnalyzer<FlowchartDiagram> analyzer;
     private readonly ISyntaxValidator syntaxValidator;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
         OllamaProvider provider,
         IConfiguration configuration,
-        UseCaseSpecAnalyzer analyzer,
+        IAnalyzer<FlowchartDiagram> analyzer,
         ISyntaxValidator syntaxValidator)
     {
         var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
@@ -31,152 +30,248 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     }
 
     /// <summary>
-    /// Generates a flowchart diagram in Mermaid.js format from use case specifications or BPMN files.
+    /// Generates a flowchart diagram in Mermaid.js format from text input.
     /// </summary>
-    /// <param name="input">Use case specifications or BPMN files.</param>
-    /// <returns>Generated Mermaid Code for Flowchart Diagram</returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <param name="input">Use case specifications, BPMN files, or natural language text.</param>
+    /// <returns>Generated Mermaid code for Flowchart Diagram</returns>
     public async Task<string> GenerateAsync(string input)
     {
-        var elements = await analyzer.AnalyzeAsync(input);
-
-
-        string result = string.Empty;
-        string validationError = string.Empty;
-
-        var prompt = GetPrompt(elements);
-        result = PostProcess(await llm.GenerateAsync(prompt));
-
-        do
+        try
         {
-            logger.LogInformation("Flowchart Generation Result: {result}", result);
+            // Extract and generate diagram structure directly from input
+            var diagram = await analyzer.AnalyzeAsync(input);
 
-            var validationResult = await syntaxValidator.ValidateAsync(result);
+            // Generate Mermaid syntax
+            string mermaidCode = GenerateMermaidCode(diagram);
 
-            if (validationResult.IsValid)
-                break;
+            logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
 
-            validationError = validationResult.ErrorMessage;
-            logger.LogWarning("Syntax invalid. Retrying with correction. Error: {validationError}", validationError);
-
-            prompt = await GetCorrectionPromptAsync(result, validationError);
-            result = PostProcess(await llm.GenerateAsync(prompt));
-        } while (true);
-
-        return result;
+            // Validate and correct if needed
+            return mermaidCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error generating flowchart diagram");
+            throw;
+        }
     }
 
-
-    private string GetPrompt(UseCaseElements useCaseElements)
+    /// <summary>
+    /// Generates Mermaid.js compatible syntax for the flowchart diagram.
+    /// </summary>
+    private string GenerateMermaidCode(FlowchartDiagram diagram)
     {
-        var jsonData = JsonSerializer.Serialize(
-            useCaseElements,
-            new JsonSerializerOptions { WriteIndented = true });
+        var mermaid = new StringBuilder();
 
-        return $"""
-        You are a Flowchart Generator. Create a Mermaid.js flowchart from the structured data below, following INSTRUCTIONS:
-        # INPUT:
-        {jsonData}
+        // Start flowchart definition with direction
+        mermaid.AppendLine("graph TD");
 
-        Generate and return only the complete Mermaid.js code block with no additional text.
-
-        # INSTRUCTIONS:
-        1. Actors: Represent each actor as a labeled swimlane or node.
-        2. Triggers: Convert triggers into Terminator nodes (stadium shape).
-        3. Main Flow: Render every step in the "MainFlow" as a rectangle (process node) and ensure sequential connections.
-        4. Decisions: Identify decision points from the "Decisions" list and represent them as diamond-shaped nodes. Link decision outcomes logically.
-        5. Alternative Flows: For each entry in "AlternativeFlows", create a subgraph named exactly as the key (use underscores instead of spaces if necessary). Include all steps in sequence and ensure they connect back to the main flow at the appropriate point.
-        6. Exception Flows: For each entry in "ExceptionFlows", create a subgraph named exactly as the key. Represent error conditions as branches off of the relevant decision or flow step, ensuring proper feedback loops where indicated.
-        7. Syntax Requirements: Use the syntax rules specified in the documentation below exactly. Do not add extra nodes or flows that are not present in the JSON data.
-        8. Output Format: Return only the Mermaid.js code block. Do not include any comments, explanations, or extra text outside of the Mermaid.js code.
-        
-        Below is an example input and the corresponding expected structure. Use it as a reference for your formatting:
-        """ +
-        """
-        # EXAMPLE: 
-        Do NOT copy from the example below. Use it only for formatting structure. Only generate diagram based on the actual INPUT data above.
-        EXAMPLE INPUT 
+        // Generate node definitions
+        foreach (var node in diagram.Nodes)
         {
-          "Actors": ["User", "System"],
-          "Triggers": ["User clicks 'Login' button"],
-          "MainFlow": [
-            "User enters username",
-            "User enters password",
-            "System validates credentials"
-          ],
-          "AlternativeFlows": {
-            "Forgot Password": [
-              "User clicks 'Forgot Password'",
-              "User enters email",
-              "System sends reset email"
-            ]
-          },
-          "ExceptionFlows": {
-            "Invalid Password": [
-              "System shows error message",
-              "User retries password entry"
-            ]
-          },
-          "Decisions": ["System validates credentials"]
+            string openingShape = GetNodeOpeningShape(node.Type);
+            string closingShape = GetNodeClosingShape(node.Type, node.Label);
+            mermaid.AppendLine($"    {node.Id}{openingShape}{closingShape}");
         }
 
-        EXAMPLE OUTPUT:
-        graph TD
-        %% Start Terminator Node
-        Start([Start: User clicks 'Login']) --> A[User enters username]
+        mermaid.AppendLine();
 
-        %% Main Flow Steps
-        A --> B[User enters password]
-        B --> C{System validates credentials?}
-
-        %% Decision Node for Valid Credentials
-        C --|Valid|--> D[Login successful]
-
-        %% Exception Flow for Invalid Password
-        C --|Invalid|--> E[System shows error message]
-        E --> F[User retries password entry]
-        F --> B
-
-        %% Alternative Flow for Forgot Password
-        subgraph Forgot_Password
-            G[User clicks 'Forgot Password'] --> H[User enters email]
-            H --> I[User clicks 'Submit']
-            I --> J[System sends reset email]
-        end
-
-        %% Link to Alternative Flow from Main Flow
-        C -->|Forgot Password| G
-        """;
-    }
-
-    private async Task<string> GetCorrectionPromptAsync(string previousMermaidCode, string validationError)
-    {
-        var filePath = Path.Combine(AppContext.BaseDirectory, "Flowchart", "flowchart.md");
-        var guidance = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
-
-        return $"""
-        You previously generated the following Mermaid.js flowchart:
-        ```mermaid
-        {previousMermaidCode}
-        ```
-        However, it contains syntax errors. The validator returned this error:
-        {validationError}
-        Please correct the Mermaid.js syntax based on this feedback and the syntax reference below. Return only the corrected Mermaid.js code block without any explanation.
-        # INSTRUCTIONS:
-        {guidance}
-        """;
-    }
-
-    private string PostProcess(string output)
-    {
-        var match = Regex.Match(output, @"```mermaid\s*([\s\S]*?)\s*```");
-        var extracted = match.Groups[1].Value.Trim();
-
-        if (string.IsNullOrWhiteSpace(extracted))
+        // Generate edge definitions
+        foreach (var edge in diagram.Edges.Where(e => !IsDuplicateEdge(e, diagram.Subflows)))
         {
-            extracted = match.Groups[0].Value.Trim();
+            string connector = GetEdgeConnector(edge.Type);
+            if (!string.IsNullOrEmpty(edge.Label))
+            {
+                mermaid.AppendLine($"    {edge.SourceId} {connector}|{edge.Label}| {edge.TargetId}");
+            }
+            else
+            {
+                mermaid.AppendLine($"    {edge.SourceId} {connector} {edge.TargetId}");
+            }
         }
 
-        return extracted;
+        // Generate subgraphs
+        if (diagram.Subflows != null && diagram.Subflows.Any())
+        {
+            foreach (var subflow in diagram.Subflows)
+            {
+                mermaid.AppendLine();
+                mermaid.AppendLine($"    subgraph {subflow.Name}[\"{FormatSubflowName(subflow.Name)}\"]");
+
+                // Add nodes in subflow
+                foreach (var node in subflow.Nodes)
+                {
+                    string openingShape = GetNodeOpeningShape(node.Type);
+                    string closingShape = GetNodeClosingShape(node.Type, node.Label);
+                    mermaid.AppendLine($"        {node.Id}{openingShape}{closingShape}");
+                }
+
+                // Add edges in subflow
+                foreach (var edge in subflow.Edges)
+                {
+                    string connector = GetEdgeConnector(edge.Type);
+                    if (!string.IsNullOrEmpty(edge.Label))
+                    {
+                        mermaid.AppendLine($"        {edge.SourceId} {connector}|{edge.Label}| {edge.TargetId}");
+                    }
+                    else
+                    {
+                        mermaid.AppendLine($"        {edge.SourceId} {connector} {edge.TargetId}");
+                    }
+                }
+
+                mermaid.AppendLine("    end");
+            }
+        }
+
+
+        return mermaid.ToString();
+    }
+
+    /// <summary>
+    /// Checks if an edge is already represented in a subflow to avoid duplication.
+    /// </summary>
+    private bool IsDuplicateEdge(FlowEdge edge, List<Subflow> subflows)
+    {
+        if (subflows == null || !subflows.Any())
+            return false;
+
+        return subflows.Any(subflow =>
+            subflow.Edges.Any(e =>
+                e.SourceId == edge.SourceId && e.TargetId == edge.TargetId));
+    }
+
+    /// <summary>
+    /// Formats a subflow name for display, converting underscores to spaces and capitalizing words.
+    /// </summary>
+    private string FormatSubflowName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return name;
+
+        // Remove error_ prefix if present
+        if (name.StartsWith("error_"))
+            name = name.Substring(6);
+
+        // Replace underscores with spaces and capitalize words
+        return string.Join(" ", name.Split('_')
+            .Select(word => word.Length > 0
+                ? char.ToUpper(word[0]) + word.Substring(1)
+                : word));
+    }
+
+    /// <summary>
+    /// Gets the opening shape syntax for a specific node type in Mermaid using the modern @{shape} syntax.
+    /// </summary>
+    private string GetNodeOpeningShape(NodeType nodeType)
+    {
+        return nodeType switch
+        {
+            // Terminal points
+            NodeType.Start => "@{shape: stadium, ",
+            NodeType.End => "@{shape: stadium, ",
+
+            // Basic nodes
+            NodeType.Process => "@{shape: rect, ",
+            NodeType.Decision => "@{shape: diam, ",
+
+            // Input/Output nodes
+            NodeType.Input => "@{shape: lean-r, ",
+            NodeType.Output => "@{shape: lean-l, ",
+            NodeType.Display => "@{shape: curv-trap, ",
+            NodeType.Document => "@{shape: doc, ",
+            NodeType.MultiDocument => "@{shape: docs, ",
+            NodeType.File => "@{shape: flag, ",
+
+            // Processing nodes
+            NodeType.Preparation => "@{shape: hex, ",
+            NodeType.ManualInput => "@{shape: sl-rect, ",
+            NodeType.ManualOperation => "@{shape: trap-t, ",
+            NodeType.PredefinedProcess => "@{shape: fr-rect, ",
+            NodeType.UserDefinedProcess => "@{shape: tag-rect, ",
+            NodeType.DividedProcess => "@{shape: div-rect, ",
+
+            // Storage nodes
+            NodeType.Database => "@{shape: cyl, ",
+            NodeType.DirectAccessStorage => "@{shape: h-cyl, ",
+            NodeType.DiskStorage => "@{shape: lin-cyl, ",
+            NodeType.StoredData => "@{shape: bow-rect, ",
+            NodeType.ExternalStorage => "@{shape: flip-tri, ",
+            NodeType.Internal => "@{shape: win-pane, ",
+
+            // Flow control
+            NodeType.Connector => "@{shape: sm-circ, ",
+            NodeType.OffPageConnector => "@{shape: tag-doc, ",
+            NodeType.Delay => "@{shape: delay, ",
+            NodeType.Loop => "@{shape: fork, ",
+            NodeType.LoopLimit => "@{shape: notch-pent, ",
+
+            // Junction nodes
+            NodeType.Merge => "@{shape: tri, ",
+            NodeType.Or => "@{shape: f-circ, ",
+            NodeType.SummingJunction => "@{shape: cross-circ, ",
+            NodeType.Sort => "@{shape: trap-b, ",
+            NodeType.Collate => "@{shape: hourglass, ",
+
+            // Annotation nodes
+            NodeType.Card => "@{shape: notch-rect, ",
+            NodeType.Comment => "@{shape: brace, ",
+            NodeType.CommentRight => "@{shape: brace-r, ",
+            NodeType.Comments => "@{shape: braces, ",
+            NodeType.ComLink => "@{shape: bolt, ",
+
+            // Default fallback
+            _ => "@{shape: rect, "
+        };
+    }
+
+    /// <summary>
+    /// Gets the closing shape syntax for modern @{shape} syntax.
+    /// For all node types using modern syntax, this is always "]".
+    /// </summary>
+    private string GetNodeClosingShape(NodeType nodeType, string nodeLabel)
+    {
+        return "label: \"" + nodeLabel + "\"}";
+    }
+
+    /// <summary>
+    /// Gets the connector syntax for a specific edge type in Mermaid.
+    /// </summary>
+    private string GetEdgeConnector(EdgeType edgeType)
+    {
+        return edgeType switch
+        {
+            // Basic connections
+            EdgeType.Normal => "-->",
+
+            // Line styles
+            EdgeType.Thick => "==>",
+            EdgeType.Dotted => "-.->",
+
+            // Semantic types
+            EdgeType.Success => "-->",
+            EdgeType.Failure => "-.->",
+            EdgeType.Conditional => "-->",
+            EdgeType.Return => "==>",
+
+            // Special connections
+            EdgeType.NoArrow => "---",
+            EdgeType.OpenLink => "--o",
+            EdgeType.CrossLink => "--x",
+            EdgeType.CircleEnd => "---o",
+            EdgeType.CrossEnd => "---x",
+
+            // Combinations
+            EdgeType.DottedNoArrow => "-.-",
+            EdgeType.DottedOpenLink => "-.o",
+            EdgeType.DottedCrossLink => "-.x",
+
+            EdgeType.ThickNoArrow => "===",
+            EdgeType.ThickOpenLink => "==o",
+            EdgeType.ThickCrossLink => "==x",
+
+            // Default fallback
+            _ => "-->"
+        };
     }
 }

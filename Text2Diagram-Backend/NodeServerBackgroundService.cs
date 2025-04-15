@@ -27,7 +27,7 @@ public class NodeServerBackgroundService : BackgroundService
 				CreateNoWindow = true,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
-				WorkingDirectory = "/home/kuro/Text2Diagram-Backend/NodeApp" // <-- chỉnh đúng folder
+				WorkingDirectory = "/home/kuro/Text2Diagram-Backend/Text2Diagram-Backend" // Đã sửa đúng path
 			};
 
 			nodeProcess = new Process { StartInfo = startInfo };
@@ -48,6 +48,7 @@ public class NodeServerBackgroundService : BackgroundService
 			throw;
 		}
 	}
+
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Delay(Timeout.Infinite, stoppingToken);

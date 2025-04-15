@@ -12,7 +12,7 @@ using Text2Diagram_Backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddHostedService<NodeServerBackgroundService>();
+//builder.Services.AddHostedService<NodeServerBackgroundService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -42,61 +42,61 @@ builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredS
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Backend ANHCUONGDUY", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Software Diagram Generator Api", Version = "v1" });
 
-	// Swagger 2.+ support
-	//                var security = new Dictionary<string, IEnumerable<string>>
-	//                {
-	//                    {"Bearer", new string[] { }},
-	//                };
-	//                
-	//                c.AddSecurityDefinition("Bearer",
-	//                    new OpenApiSecurityScheme()
-	//                    {
-	//                        In = ParameterLocation.Header,
-	//                        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-	//                      Enter 'Bearer' [space] and then your token in the text input below.
-	//                      \r\n\r\nExample: 'Bearer 12345abcdef'",
-	//                        Name = "Authorization", 
-	//                        Type = SecuritySchemeType.ApiKey 
-	//                    });
-	c.AddSecurityDefinition("Authorization", new OpenApiSecurityScheme
-	{
-		Description = "Api key needed to access the endpoints. Authorization: Bearer xxxx",
-		In = ParameterLocation.Header,
-		Name = "Authorization",
-		Type = SecuritySchemeType.ApiKey
-	});
-	c.AddSecurityRequirement(new OpenApiSecurityRequirement
-			{
-					{
-						new OpenApiSecurityScheme
-						{
-							Name = "Authorization",
-							Type = SecuritySchemeType.ApiKey,
-							In = ParameterLocation.Header,
-							Reference = new OpenApiReference
-							{
-								Type = ReferenceType.SecurityScheme,
-								Id = "Authorization"
-							},
-						},
-						new string[] {}
-					}
-			});
+    // Swagger 2.+ support
+    //                var security = new Dictionary<string, IEnumerable<string>>
+    //                {
+    //                    {"Bearer", new string[] { }},
+    //                };
+    //                
+    //                c.AddSecurityDefinition("Bearer",
+    //                    new OpenApiSecurityScheme()
+    //                    {
+    //                        In = ParameterLocation.Header,
+    //                        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
+    //                      Enter 'Bearer' [space] and then your token in the text input below.
+    //                      \r\n\r\nExample: 'Bearer 12345abcdef'",
+    //                        Name = "Authorization", 
+    //                        Type = SecuritySchemeType.ApiKey 
+    //                    });
+    c.AddSecurityDefinition("Authorization", new OpenApiSecurityScheme
+    {
+        Description = "Api key needed to access the endpoints. Authorization: Bearer xxxx",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Name = "Authorization",
+                            Type = SecuritySchemeType.ApiKey,
+                            In = ParameterLocation.Header,
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Authorization"
+                            },
+                        },
+                        new string[] {}
+                    }
+            });
 });
 
 
 
 builder.Services.AddCors(options =>
 {
-	options.AddDefaultPolicy(policyBuilder =>
-	{
-		policyBuilder
-				.AllowAnyOrigin()
-				.AllowAnyMethod()
-				.AllowAnyHeader();
-	});
+    options.AddDefaultPolicy(policyBuilder =>
+    {
+        policyBuilder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+    });
 });
 
 var app = builder.Build();

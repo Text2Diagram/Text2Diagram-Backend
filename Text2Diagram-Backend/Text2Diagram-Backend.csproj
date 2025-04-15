@@ -18,11 +18,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="14.0.0" />
 		<PackageReference Include="LangChain.Databases.Sqlite" Version="0.17.0" />
 		<PackageReference Include="LangChain.DocumentLoaders.Abstractions" Version="0.17.0" />
 		<PackageReference Include="LangChain.DocumentLoaders.Html" Version="0.17.0" />
 		<PackageReference Include="LangChain.Providers.Ollama" Version="0.17.0" />
 		<PackageReference Include="LangChain.Splitters.CSharp" Version="0.17.0" />
+		<PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="9.0.4" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.3" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
 		  <PrivateAssets>all</PrivateAssets>

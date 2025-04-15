@@ -103,12 +103,9 @@ var app = builder.Build();
 
 app.UseCors();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+// Enable Swagger in non-development environments
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 app.UseExceptionHandler();

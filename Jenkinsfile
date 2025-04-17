@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                git 'git@github.com:Text2Diagram/Text2Diagram-Backend.git'
+                git 'https://github.com/Text2Diagram/Text2Diagram-Backend.git'
             }
         }
 

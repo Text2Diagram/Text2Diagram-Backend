@@ -2,7 +2,6 @@ pipeline {
     agent {
         docker {
             image 'mcr.microsoft.com/dotnet/sdk:8.0'
-            args '-v /home/jenkins/.ssh:/root/.ssh' // nếu bạn cần SSH
         }
     }
     stages {

@@ -4,7 +4,7 @@ using Text2Diagram_Backend.Data.Models;
 
 namespace Text2Diagram_Backend.Controllers;
 
-public record GenerateDiagramRequest(string DiagramType, string Input);
+public record GenerateDiagramRequest(string DiagramType, string Input, string? InputType);
 
 [ApiController]
 [Route("[controller]")]
@@ -22,9 +22,7 @@ public class DiagramsController : ControllerBase
     public async Task<IActionResult> GenerateDiagram([FromBody] GenerateDiagramRequest request)
     {
         DiagramType diagramType;
-        var parseSuccess = Enum.TryParse(request.DiagramType, true, out diagramType);
-
-        if (!parseSuccess)
+        if (!Enum.TryParse(request.DiagramType, true, out diagramType))
         {
             return BadRequest("Invalid diagram type.");
         }

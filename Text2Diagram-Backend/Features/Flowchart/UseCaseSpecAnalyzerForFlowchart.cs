@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Common.Abstractions;
 
-namespace Text2Diagram_Backend.Flowchart;
+namespace Text2Diagram_Backend.Features.Flowchart;
 
 /// <summary>
 /// Analyzes structured use case specifications to extract elements for flowchart generation.
@@ -367,18 +367,18 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
                 if (result.Subflows != null && result.Subflows.Any())
                 {
                     var updatedSubflows = new List<Subflow>();
-                    
+
                     foreach (var subflow in result.Subflows)
                     {
                         // Create a set of valid node IDs for this subflow
                         var subflowNodeIds = new HashSet<string>();
-                        
+
                         // Add all nodes from the main diagram
                         foreach (var nodeId in nodeIds)
                         {
                             subflowNodeIds.Add(nodeId);
                         }
-                        
+
                         // Add nodes specific to this subflow
                         if (subflow.Nodes != null)
                         {
@@ -387,16 +387,16 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
                                 subflowNodeIds.Add(node.Id);
                             }
                         }
-                        
+
                         // Filter out invalid edges
                         var validSubflowEdges = subflow.Edges
                             .Where(edge => subflowNodeIds.Contains(edge.SourceId) && subflowNodeIds.Contains(edge.TargetId))
                             .ToList();
-                        
+
                         var invalidSubflowEdges = subflow.Edges
                             .Where(edge => !subflowNodeIds.Contains(edge.SourceId) || !subflowNodeIds.Contains(edge.TargetId))
                             .ToList();
-                        
+
                         if (invalidSubflowEdges.Any())
                         {
                             foreach (var edge in invalidSubflowEdges)
@@ -404,16 +404,16 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
                                 logger.LogWarning("Invalid edge in subflow '{subflowName}': Edge '{edgeId}' - Source '{source}' or Target '{target}' node not found",
                                     subflow.Name, edge.Id, edge.SourceId, edge.TargetId);
                             }
-                            
-                            logger.LogWarning("Removed {count} edges with invalid source/target references from subflow '{subflowName}'", 
+
+                            logger.LogWarning("Removed {count} edges with invalid source/target references from subflow '{subflowName}'",
                                 invalidSubflowEdges.Count, subflow.Name);
                         }
-                        
+
                         // Create updated subflow with valid edges
                         var updatedSubflow = subflow with { Edges = validSubflowEdges };
                         updatedSubflows.Add(updatedSubflow);
                     }
-                    
+
                     // Update the result with the corrected subflows
                     result = result with { Subflows = updatedSubflows };
                 }

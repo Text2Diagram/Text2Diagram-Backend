@@ -6,8 +6,9 @@ using Text2Diagram_Backend.Common;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
-using Text2Diagram_Backend.Flowchart;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
+using Text2Diagram_Backend.UsecaseDiagram;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,10 +36,18 @@ builder.Services.AddSingleton<OllamaProvider>();
 builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
 builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
 
+
+builder.Services.AddSingleton<UseCaseSpecGenerator>();
+
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
+
+
+
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

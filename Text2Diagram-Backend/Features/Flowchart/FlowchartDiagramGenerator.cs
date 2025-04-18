@@ -2,7 +2,7 @@ using LangChain.Providers.Ollama;
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
 
-namespace Text2Diagram_Backend.Flowchart;
+namespace Text2Diagram_Backend.Features.Flowchart;
 
 /// <summary>
 /// Generates flowchart diagrams in Mermaid.js format from structured data
@@ -10,23 +10,15 @@ namespace Text2Diagram_Backend.Flowchart;
 /// </summary>
 public class FlowchartDiagramGenerator : IDiagramGenerator
 {
-    private readonly OllamaChatModel llm;
     private readonly ILogger<FlowchartDiagramGenerator> logger;
     private readonly IAnalyzer<FlowchartDiagram> analyzer;
-    private readonly ISyntaxValidator syntaxValidator;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
-        OllamaProvider provider,
-        IConfiguration configuration,
-        IAnalyzer<FlowchartDiagram> analyzer,
-        ISyntaxValidator syntaxValidator)
+        IAnalyzer<FlowchartDiagram> analyzer)
     {
-        var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
-        llm = new OllamaChatModel(provider, id: llmName);
         this.logger = logger;
         this.analyzer = analyzer;
-        this.syntaxValidator = syntaxValidator;
     }
 
     /// <summary>

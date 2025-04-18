@@ -12,6 +12,8 @@ using Text2Diagram_Backend.UsecaseDiagram;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.UseUrls("http://0.0.0.0:5000");
+
 // Add services to the container.
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
 
@@ -112,12 +114,9 @@ var app = builder.Build();
 
 app.UseCors();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
+// Enable Swagger in non-development environments
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 app.UseExceptionHandler();

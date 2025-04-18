@@ -17,28 +17,28 @@ public class NodeServerBackgroundService : BackgroundService
 	{
 		try
 		{
-			logger.LogInformation("Starting Node.js validation server...");
+			//logger.LogInformation("Starting Node.js validation server...");
 
-			var startInfo = new ProcessStartInfo
-			{
-				FileName = "node",
-				Arguments = "validationServer.js",
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true,
-				WorkingDirectory = "/home/kuro/Text2Diagram-Backend/Text2Diagram-Backend" // Đã sửa đúng path
-			};
+			//var startInfo = new ProcessStartInfo
+			//{
+			//	FileName = "node",
+			//	Arguments = "validationServer.js",
+			//	UseShellExecute = false,
+			//	CreateNoWindow = true,
+			//	RedirectStandardOutput = true,
+			//	RedirectStandardError = true,
+			//	WorkingDirectory = "/home/kuro/Text2Diagram-Backend/Text2Diagram-Backend" // Đã sửa đúng path
+			//};
 
-			nodeProcess = new Process { StartInfo = startInfo };
-			nodeProcess.OutputDataReceived += (sender, args) => logger.LogInformation(args.Data);
-			nodeProcess.ErrorDataReceived += (sender, args) => logger.LogError(args.Data);
+			//nodeProcess = new Process { StartInfo = startInfo };
+			//nodeProcess.OutputDataReceived += (sender, args) => logger.LogInformation(args.Data);
+			//nodeProcess.ErrorDataReceived += (sender, args) => logger.LogError(args.Data);
 
-			nodeProcess.Start();
-			nodeProcess.BeginOutputReadLine();
-			nodeProcess.BeginErrorReadLine();
+			//nodeProcess.Start();
+			//nodeProcess.BeginOutputReadLine();
+			//nodeProcess.BeginErrorReadLine();
 
-			logger.LogInformation("Validation server started.");
+			//logger.LogInformation("Validation server started.");
 
 			return base.StartAsync(cancellationToken);
 		}

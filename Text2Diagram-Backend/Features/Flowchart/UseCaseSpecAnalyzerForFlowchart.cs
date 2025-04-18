@@ -1,5 +1,5 @@
-using LangChain.Providers;
-using LangChain.Providers.Ollama;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Common.Abstractions;
@@ -12,16 +12,14 @@ namespace Text2Diagram_Backend.Features.Flowchart;
 /// </summary>
 public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
 {
-    private readonly OllamaChatModel llm;
+    private readonly Kernel kernel;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> logger;
 
     public UseCaseSpecAnalyzerForFlowchart(
-        OllamaProvider provider,
-        IConfiguration configuration,
+        Kernel kernel,
         ILogger<UseCaseSpecAnalyzerForFlowchart> logger)
     {
-        var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
-        llm = new OllamaChatModel(provider, id: llmName);
+        this.kernel = kernel;
         this.logger = logger;
     }
 
@@ -36,11 +34,14 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
         try
         {
             var prompt = GetAnalysisPrompt(useCaseSpec);
-            var response = await llm.GenerateAsync(prompt);
+            IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+            var chatHistory = new ChatHistory();
+            chatHistory.AddUserMessage(prompt);
+            var response = await chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
 
             logger.LogInformation("LLM response: {response}", response);
 
-            var diagram = ParseAndValidateResponse(response);
+            var diagram = ParseAndValidateResponse(response.Content ?? "");
             if (diagram == null)
             {
                 logger.LogError("Failed to extract valid flowchart diagram from LLM response");

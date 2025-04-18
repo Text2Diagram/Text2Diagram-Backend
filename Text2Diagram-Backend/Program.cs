@@ -1,18 +1,19 @@
-using LangChain.Providers.Ollama;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.Ollama;
+using Microsoft.SemanticKernel.ChatCompletion;
 using Text2Diagram_Backend;
-using Text2Diagram_Backend.Common;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
-using Text2Diagram_Backend.UsecaseDiagram;
+using Ollama;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+builder.WebHost.UseUrls("https://0.0.0.0:5000");
 
 // Add services to the container.
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
@@ -34,9 +35,26 @@ builder.Services.AddProblemDetails();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Configure Ollama
-builder.Services.AddSingleton<OllamaProvider>();
+var llmId = builder.Configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
+var ollamaEndpoint = builder.Configuration["Ollama:Endpoint"] ?? throw new InvalidOperationException("Ollama endpoint was not defined.");
+builder.Services.AddSingleton(sp =>
+{
+    var httpClient = new HttpClient
+    {
+        BaseAddress = new Uri(ollamaEndpoint),
+        Timeout = TimeSpan.FromMinutes(5)
+    };
+#pragma warning disable SKEXP0070
+    var kernel = Kernel.CreateBuilder()
+        .AddOllamaChatCompletion(llmId, httpClient)
+        .Build();
+#pragma warning restore SKEXP0070
+
+    return kernel;
+});
+
 builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
-builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
+//builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
 
 
 builder.Services.AddSingleton<UseCaseSpecGenerator>();

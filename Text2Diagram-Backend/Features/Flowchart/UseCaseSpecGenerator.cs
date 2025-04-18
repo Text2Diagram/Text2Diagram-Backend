@@ -1,26 +1,32 @@
 using LangChain.Providers;
 using LangChain.Providers.Ollama;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace Text2Diagram_Backend.Features.Flowchart;
 
 public class UseCaseSpecGenerator
 {
-    private readonly OllamaChatModel llm;
+    private readonly Kernel kernel;
     private readonly ILogger<UseCaseSpecGenerator> logger;
 
-    public UseCaseSpecGenerator(IConfiguration configuration, OllamaProvider provider, ILogger<UseCaseSpecGenerator> logger)
+    public UseCaseSpecGenerator(
+        Kernel kernel,
+        ILogger<UseCaseSpecGenerator> logger)
     {
-        var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
-        llm = new OllamaChatModel(provider, id: llmName);
+        this.kernel = kernel;
         this.logger = logger;
     }
 
     public async Task<string> GenerateUseCaseSpecAsync(string description)
     {
         var prompt = GetPrompt(description);
-        var response = await llm.GenerateAsync(prompt);
+        IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+        var chatHistory = new ChatHistory();
+        chatHistory.AddUserMessage(prompt);
+        var response = await chatCompletionService.GetChatMessageContentAsync(prompt, kernel: kernel);
         logger.LogInformation("Generated use case: {response}", response);
-        return response;
+        return response.Content ?? "";
     }
 
     private string GetPrompt(string description)

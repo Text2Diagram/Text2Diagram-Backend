@@ -49,4 +49,8 @@
 		<Protobuf Include="Protos/mermaid.proto" GrpcServices="Client" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="ClassDiagram\" />
+	</ItemGroup>
+
 </Project>

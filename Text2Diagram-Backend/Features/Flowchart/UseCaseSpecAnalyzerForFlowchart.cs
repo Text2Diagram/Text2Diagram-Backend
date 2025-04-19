@@ -1,10 +1,10 @@
-using LangChain.Providers;
-using LangChain.Providers.Ollama;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Common.Abstractions;
 
-namespace Text2Diagram_Backend.Flowchart;
+namespace Text2Diagram_Backend.Features.Flowchart;
 
 /// <summary>
 /// Analyzes structured use case specifications to extract elements for flowchart generation.
@@ -12,16 +12,14 @@ namespace Text2Diagram_Backend.Flowchart;
 /// </summary>
 public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
 {
-    private readonly OllamaChatModel llm;
+    private readonly Kernel kernel;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> logger;
 
     public UseCaseSpecAnalyzerForFlowchart(
-        OllamaProvider provider,
-        IConfiguration configuration,
+        Kernel kernel,
         ILogger<UseCaseSpecAnalyzerForFlowchart> logger)
     {
-        var llmName = configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
-        llm = new OllamaChatModel(provider, id: llmName);
+        this.kernel = kernel;
         this.logger = logger;
     }
 
@@ -36,18 +34,23 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
         try
         {
             var prompt = GetAnalysisPrompt(useCaseSpec);
-            var response = await llm.GenerateAsync(prompt);
+            IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+            var chatHistory = new ChatHistory();
+
+            chatHistory.AddUserMessage(prompt);
+            var response = await chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
 
             logger.LogInformation("LLM response: {response}", response);
 
-            var diagram = ParseAndValidateResponse(response);
+            var diagram = ParseAndValidateResponse(response.Content ?? string.Empty);
             if (diagram == null)
             {
-                logger.LogError("Failed to extract valid flowchart diagram from LLM response");
-                throw new FormatException("Error while analyzing use case specification.");
+                logger.LogError("Failed to parse or validate the LLM response");
+                throw new FormatException("Failed to analyze use case specification: invalid diagram structure.");
             }
 
             return diagram;
+
         }
         catch (Exception ex) when (ex is not FormatException)
         {
@@ -367,18 +370,18 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
                 if (result.Subflows != null && result.Subflows.Any())
                 {
                     var updatedSubflows = new List<Subflow>();
-                    
+
                     foreach (var subflow in result.Subflows)
                     {
                         // Create a set of valid node IDs for this subflow
                         var subflowNodeIds = new HashSet<string>();
-                        
+
                         // Add all nodes from the main diagram
                         foreach (var nodeId in nodeIds)
                         {
                             subflowNodeIds.Add(nodeId);
                         }
-                        
+
                         // Add nodes specific to this subflow
                         if (subflow.Nodes != null)
                         {
@@ -387,16 +390,16 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
                                 subflowNodeIds.Add(node.Id);
                             }
                         }
-                        
+
                         // Filter out invalid edges
                         var validSubflowEdges = subflow.Edges
                             .Where(edge => subflowNodeIds.Contains(edge.SourceId) && subflowNodeIds.Contains(edge.TargetId))
                             .ToList();
-                        
+
                         var invalidSubflowEdges = subflow.Edges
                             .Where(edge => !subflowNodeIds.Contains(edge.SourceId) || !subflowNodeIds.Contains(edge.TargetId))
                             .ToList();
-                        
+
                         if (invalidSubflowEdges.Any())
                         {
                             foreach (var edge in invalidSubflowEdges)
@@ -404,16 +407,16 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
                                 logger.LogWarning("Invalid edge in subflow '{subflowName}': Edge '{edgeId}' - Source '{source}' or Target '{target}' node not found",
                                     subflow.Name, edge.Id, edge.SourceId, edge.TargetId);
                             }
-                            
-                            logger.LogWarning("Removed {count} edges with invalid source/target references from subflow '{subflowName}'", 
+
+                            logger.LogWarning("Removed {count} edges with invalid source/target references from subflow '{subflowName}'",
                                 invalidSubflowEdges.Count, subflow.Name);
                         }
-                        
+
                         // Create updated subflow with valid edges
                         var updatedSubflow = subflow with { Edges = validSubflowEdges };
                         updatedSubflows.Add(updatedSubflow);
                     }
-                    
+
                     // Update the result with the corrected subflows
                     result = result with { Subflows = updatedSubflows };
                 }

@@ -36,19 +36,21 @@ public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
             var prompt = GetAnalysisPrompt(useCaseSpec);
             IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
             var chatHistory = new ChatHistory();
+
             chatHistory.AddUserMessage(prompt);
             var response = await chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
 
             logger.LogInformation("LLM response: {response}", response);
 
-            var diagram = ParseAndValidateResponse(response.Content ?? "");
+            var diagram = ParseAndValidateResponse(response.Content ?? string.Empty);
             if (diagram == null)
             {
-                logger.LogError("Failed to extract valid flowchart diagram from LLM response");
-                throw new FormatException("Error while analyzing use case specification.");
+                logger.LogError("Failed to parse or validate the LLM response");
+                throw new FormatException("Failed to analyze use case specification: invalid diagram structure.");
             }
 
             return diagram;
+
         }
         catch (Exception ex) when (ex is not FormatException)
         {

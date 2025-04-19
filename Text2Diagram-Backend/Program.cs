@@ -48,8 +48,7 @@ builder.Services.AddSingleton(sp =>
     var kernel = Kernel.CreateBuilder()
         .AddOllamaChatCompletion(llmId, httpClient)
         .Build();
-#pragma warning restore SKEXP0070
-
+#pragma warning restore 
     return kernel;
 });
 

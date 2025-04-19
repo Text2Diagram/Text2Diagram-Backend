@@ -1,4 +1,4 @@
-﻿namespace Text2Diagram_Backend.Flowchart;
+﻿namespace Text2Diagram_Backend.Features.Flowchart;
 
 public record FlowchartDiagram(
     List<FlowNode> Nodes,

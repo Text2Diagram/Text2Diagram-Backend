@@ -1,6 +1,6 @@
-﻿using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data.Models;
-using Text2Diagram_Backend.Flowchart;
+using Text2Diagram_Backend.Features.Flowchart;
 
 namespace Text2Diagram_Backend.Common.Implementations;
 
@@ -13,11 +13,9 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
     {
         generators = new Dictionary<DiagramType, IDiagramGenerator>
         {
-            { DiagramType.Flowchart, flowchartDiagramGenerator },
-            //{ DiagramType.Sequence,  },
-            //{ DiagramType.Class,  },
-            //{ DiagramType.UseCase,  },
-            //{ DiagramType.ER,  }
+            {
+                DiagramType.Flowchart, flowchartDiagramGenerator
+            }
         };
     }
 
@@ -28,6 +26,6 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
             return generator;
         }
 
-        throw new ArgumentException("Invalid diagram type", nameof(diagramType));
+        throw new ArgumentException($"No generator found for diagram type {diagramType}.");
     }
 }

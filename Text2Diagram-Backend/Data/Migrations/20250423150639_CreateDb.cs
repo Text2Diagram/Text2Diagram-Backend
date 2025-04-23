@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Text2Diagram_Backend.Migrations
+namespace Text2Diagram_Backend.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class mg1 : Migration
+    public partial class CreateDb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -40,6 +40,7 @@ namespace Text2Diagram_Backend.Migrations
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsPublic = table.Column<bool>(type: "boolean", nullable: false),
                     UserId = table.Column<string>(type: "text", nullable: false),
+                    DiagramJson = table.Column<string>(type: "jsonb", nullable: false),
                     WorkspaceId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>

@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Text2Diagram_Backend.Data;
 
 #nullable disable
 
-namespace Text2Diagram_Backend.Migrations
+namespace Text2Diagram_Backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250423150639_CreateDb")]
+    partial class CreateDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,6 +40,10 @@ namespace Text2Diagram_Backend.Migrations
                     b.Property<string>("DiagramData")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("DiagramJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("DiagramType")
                         .IsRequired()

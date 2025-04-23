@@ -11,12 +11,13 @@ public class Diagram
     public DateTime? UpdatedAt { get; set; }
     public bool IsPublic { get; set; } = false;
     public string UserId { get; init; } = string.Empty;
+    public string DiagramJson { get; set; } = string.Empty;
 
     public ICollection<Share> Shares { get; set; } = [];
 
     private Diagram() { }
 
-    public Diagram(string title, string diagramData, string userId, DiagramType diagramType, string? description)
+    public Diagram(string title, string diagramData, string userId, DiagramType diagramType, string? description, string diagramJson)
     {
         Id = Guid.NewGuid();
         Title = title;
@@ -26,5 +27,6 @@ public class Diagram
         UserId = userId;
         DiagramType = diagramType;
         IsPublic = true;
+        DiagramJson = diagramJson;
     }
 }

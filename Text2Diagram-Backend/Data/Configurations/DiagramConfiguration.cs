@@ -28,6 +28,10 @@ public class DiagramConfiguration : IEntityTypeConfiguration<Diagram>
                 v => (DiagramType)Enum.Parse(typeof(DiagramType), v)
             ));
 
+        builder.Property(d => d.DiagramJson)
+            .IsRequired()
+            .HasColumnType("jsonb");
+
 
         builder.HasMany(d => d.Shares)
             .WithOne()

@@ -2,13 +2,12 @@
 {
 	public class ProjectVM
 	{
-		public Guid Id { get; init; }
+		public Guid Id { get; set; }
 		public Guid WorkspaceId { set; get; }
-		public Guid DiagramId { get; private set; }
 		public string Data { get; init; } = string.Empty;
 		public string Name { get; init; } = string.Empty;
 		public string Thumbnail { get; init; } = string.Empty;
-		public DateTime CreatedAt { get; init; } = DateTime.Now;
-		public DateTime UpdatedAt { get; init; } = DateTime.Now;
+		public DateTime CreatedAt { get; init; }
+		public DateTime? UpdatedAt { get; set; }
 	}
 }

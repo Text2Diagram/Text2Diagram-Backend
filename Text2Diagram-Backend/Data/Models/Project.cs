@@ -9,20 +9,18 @@ namespace Text2Diagram_Backend.Data.Models
 		public string Data { get; init; } = string.Empty;
 		public string Name { get; init; } = string.Empty;
 		public string Thumbnail { get; init; } = string.Empty;
-		public DateTime CreatedAt { get; init; } = DateTime.Now;
-		public DateTime UpdatedAt { get; init; } = DateTime.Now;
+		public DateTime CreatedAt { get; init; }
+		public DateTime? UpdatedAt { get; set; }
 
 		private Project() { }
 
-		public Project(Guid WorkspaceId, string Data, string Name, string Thumbnail, DateTime CreatedAt, DateTime UpdatedAt)
+		public Project(Guid workspaceId, string data, string name, string thumbnail)
 		{
 			Id = Guid.NewGuid();
-			WorkspaceId = WorkspaceId;
-			Data = Data;
-			Thumbnail = Thumbnail;
-			Name = Name;
-			CreatedAt = CreatedAt;
-			UpdatedAt = UpdatedAt;
+			WorkspaceId = workspaceId;
+			Data = data;
+			Thumbnail = thumbnail;
+			Name = name;
 		}
 	}
 }

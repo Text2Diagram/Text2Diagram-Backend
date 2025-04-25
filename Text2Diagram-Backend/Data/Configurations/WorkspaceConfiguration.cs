@@ -26,5 +26,10 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .WithOne()
             .HasForeignKey(m => m.WorkspaceId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(w => w.Projects)
+            .WithOne()
+            .HasForeignKey(p => p.WorkspaceId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

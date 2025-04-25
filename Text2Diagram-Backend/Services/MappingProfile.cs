@@ -19,6 +19,9 @@ namespace Text2Diagram_Backend.Services
 
 			CreateMap<WorkspaceMember, WorkspaceMemberVM>();         // Entity → DTO
 			CreateMap<WorkspaceMemberVM, WorkspaceMember>();         // DTO → Entity
+
+			CreateMap<Project, ProjectVM>();         // Entity → DTO
+			CreateMap<ProjectVM, Project>();         // DTO → Entity
 		}
 	}
 }

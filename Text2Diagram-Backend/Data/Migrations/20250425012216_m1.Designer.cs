@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Text2Diagram_Backend.Data;
@@ -11,9 +12,11 @@ using Text2Diagram_Backend.Data;
 namespace Text2Diagram_Backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250425012216_m1")]
+    partial class m1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,6 +77,7 @@ namespace Text2Diagram_Backend.Data.Migrations
             modelBuilder.Entity("Text2Diagram_Backend.Data.Models.Project", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -82,6 +86,9 @@ namespace Text2Diagram_Backend.Data.Migrations
                     b.Property<string>("Data")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("DiagramId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -98,8 +105,6 @@ namespace Text2Diagram_Backend.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("Projects");
                 });
@@ -187,15 +192,6 @@ namespace Text2Diagram_Backend.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Text2Diagram_Backend.Data.Models.Project", b =>
-                {
-                    b.HasOne("Text2Diagram_Backend.Data.Models.Workspace", null)
-                        .WithMany("Projects")
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Text2Diagram_Backend.Data.Models.Share", b =>
                 {
                     b.HasOne("Text2Diagram_Backend.Data.Models.Diagram", null)
@@ -224,8 +220,6 @@ namespace Text2Diagram_Backend.Data.Migrations
                     b.Navigation("Diagrams");
 
                     b.Navigation("Members");
-
-                    b.Navigation("Projects");
                 });
 #pragma warning restore 612, 618
         }

@@ -10,8 +10,9 @@ public class Workspace
     public string OwnerId { get; set; } = string.Empty;
     public ICollection<Diagram> Diagrams { get; set; } = [];
     public ICollection<WorkspaceMember> Members { get; set; } = [];
+    public ICollection<Project> Projects { get; set; } = [];
 
-    private Workspace() { }
+	private Workspace() { }
 
     public Workspace(string name, string ownerId, string? description)
     {

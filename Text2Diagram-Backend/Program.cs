@@ -60,8 +60,8 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
-builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForER>();
+builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForER>());
 
 
 

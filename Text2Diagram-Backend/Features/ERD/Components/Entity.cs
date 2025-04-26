@@ -2,5 +2,7 @@
 {
 	public class Entity
 	{
+		public string name { get; set; } = string.Empty;
+		public List<Property> properties { get; set; }
 	}
 }

@@ -1,6 +1,9 @@
-﻿namespace Text2Diagram_Backend.Features.ERD.Components
+﻿
+namespace Text2Diagram_Backend.Features.ERD.Components
 {
-	public class ERDiagram
-	{
-	}
+	public record ERDiagram
+	(
+		List<Entity> entities,
+		List<Relationship> relationships
+	);
 }

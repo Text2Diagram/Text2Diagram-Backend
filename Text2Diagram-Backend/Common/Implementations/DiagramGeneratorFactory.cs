@@ -9,14 +9,19 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
     private readonly Dictionary<DiagramType, IDiagramGenerator> generators;
 
     public DiagramGeneratorFactory(
-        FlowchartDiagramGenerator flowchartDiagramGenerator)
+        FlowchartDiagramGenerator flowchartDiagramGenerator,
+        ERDiagramGenerator eRDiagramGenerator)
     {
         generators = new Dictionary<DiagramType, IDiagramGenerator>
         {
             {
                 DiagramType.Flowchart, flowchartDiagramGenerator
-            }
-        };
+            },
+
+			{
+				DiagramType.ER, eRDiagramGenerator
+			}
+		};
     }
 
     public IDiagramGenerator GetGenerator(DiagramType diagramType)

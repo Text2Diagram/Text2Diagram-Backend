@@ -10,6 +10,7 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
 using Ollama;
+using Text2Diagram_Backend.Features.ERD.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,8 +61,10 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForER>();
-builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForER>());
+builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
+builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForER>());
 
 
 

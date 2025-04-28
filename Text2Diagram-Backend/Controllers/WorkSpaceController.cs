@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.ViewModels;
@@ -26,28 +27,39 @@ namespace Text2Diagram_Backend.Controllers
 			return Ok(FormatData.FormatDataFunc(page, pageSize, result));
 		}
 
-		[HttpGet("{id}")]
-		public async Task<IActionResult> GetSingle(Guid id)
-		{
-			var result = await _dbContext.Workspaces.FindAsync(id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
-		}
+        [HttpGet("ownerId/{id}")]
+        public async Task<IActionResult> GetByOwnerId(string id)
+        {
+            var result = await _dbContext.Workspaces.SingleOrDefaultAsync(x => x.OwnerId == id);
 
-		[HttpPost]
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetSingle(Guid id)
+        {
+            var result = await _dbContext.Workspaces.FindAsync(id);
+            return Ok(result);
+        }
+
+        [HttpPost]
 		public async Task<IActionResult> Create(WorkspaceVM item)
 		{
 			var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
 			_dbContext.Workspaces.Add(newItem);
 			await _dbContext.SaveChangesAsync();
 			var result = await _dbContext.Workspaces.FindAsync(newItem.Id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
+			return Ok(result);
 		}
 
-		[HttpPut]
-		public async Task<IActionResult> Update(WorkspaceVM item)
+		[HttpPut("{id}")]
+		public async Task<IActionResult> Update(Guid id, WorkspaceVM item)
 		{
 			var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
-			var editItem = _dbContext.Workspaces.Single(x => x.Id == item.Id);
+			var editItem = _dbContext.Workspaces.Single(x => x.Id == id);
 			if (editItem == null)
 				return BadRequest("Không tồn tại dữ liệu");
 			_mapper.Map<WorkspaceVM, Workspace>(item, editItem);

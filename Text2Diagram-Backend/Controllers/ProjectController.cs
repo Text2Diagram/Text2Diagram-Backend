@@ -4,6 +4,7 @@ using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.ViewModels;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.EntityFrameworkCore;
 
 namespace Text2Diagram_Backend.Controllers
 {
@@ -21,17 +22,32 @@ namespace Text2Diagram_Backend.Controllers
 		}
 
 		[HttpGet]
-		public IActionResult GetAll(int page, int pageSize)
+		public async Task<IActionResult> GetAll(int page, int pageSize)
 		{
-			var result = _dbContext.Projects.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-			return Ok(FormatData.FormatDataFunc(page, pageSize, result));
+			page = page == null || page == 0 ? 1 : page;
+			pageSize = pageSize == null || pageSize == 0 ? 20 : pageSize;
+			var temp = await _dbContext.Projects.ToListAsync();
+			var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+			var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
+			return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
 		}
 
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetSingle(Guid id)
 		{
 			var result = await _dbContext.Projects.FindAsync(id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
+			return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
+		}
+
+		[HttpGet("by-workspaceid/{code}")]
+		public async Task<IActionResult> GetByWorkSpaceId(Guid code, int page, int pageSize)
+		{
+			page = page == null || page == 0 ? 1 : page;
+			pageSize = pageSize == null || pageSize == 0 ? 20 : pageSize;
+			var temp = await _dbContext.Projects.Where(x => x.WorkspaceId == code).ToListAsync();
+			var data = temp.Skip((page - 1)*pageSize).Take(pageSize).ToList();
+			int totalPage = temp.Count();
+			return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
 		}
 
 		[HttpPost]
@@ -41,7 +57,7 @@ namespace Text2Diagram_Backend.Controllers
 			_dbContext.Projects.Add(newItem);
 			await _dbContext.SaveChangesAsync();
 			var result = await _dbContext.Projects.FindAsync(newItem.Id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
+			return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
 		}
 
 		[HttpPut]

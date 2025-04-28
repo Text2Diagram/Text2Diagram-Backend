@@ -3,7 +3,7 @@ using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.ERD.Components;
 
-namespace Text2Diagram_Backend.Features.Flowchart;
+namespace Text2Diagram_Backend.ERD.Generators.ERDiagramGenerator;
 
 /// <summary>
 /// Generates flowchart diagrams in Mermaid.js format from structured data

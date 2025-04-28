@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.ViewModels;
@@ -21,17 +22,21 @@ namespace Text2Diagram_Backend.Controllers
 		}
 
 		[HttpGet]
-		public IActionResult GetAll(int page, int pageSize)
+		public async Task<IActionResult> GetAll(int page, int pageSize)
 		{
-			var result = _dbContext.WorkspaceMembers.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-			return Ok(FormatData.FormatDataFunc(page, pageSize, result));
+			page = page == null || page == 0 ? 1 : page;
+			pageSize = pageSize == null || pageSize == 0 ? 20 : pageSize;
+			var temp = await _dbContext.WorkspaceMembers.ToListAsync();
+			var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+			var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
+			return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
 		}
 
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetSingle(Guid id)
 		{
 			var result = await _dbContext.WorkspaceMembers.FindAsync(id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
+			return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
 		}
 
 		[HttpPost]
@@ -41,7 +46,7 @@ namespace Text2Diagram_Backend.Controllers
 			_dbContext.WorkspaceMembers.Add(newItem);
 			await _dbContext.SaveChangesAsync();
 			var result = await _dbContext.WorkspaceMembers.FindAsync(newItem.Id);
-			return Ok(FormatData.FormatDataFunc(0, 0, result));
+			return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
 		}
 
 		[HttpPut]

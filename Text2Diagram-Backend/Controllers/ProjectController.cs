@@ -36,7 +36,7 @@ namespace Text2Diagram_Backend.Controllers
 		public async Task<IActionResult> GetSingle(Guid id)
 		{
 			var result = await _dbContext.Projects.FindAsync(id);
-			return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
+			return Ok(result);
 		}
 
 		[HttpGet("by-workspaceid/{code}")]
@@ -57,14 +57,15 @@ namespace Text2Diagram_Backend.Controllers
 			_dbContext.Projects.Add(newItem);
 			await _dbContext.SaveChangesAsync();
 			var result = await _dbContext.Projects.FindAsync(newItem.Id);
-			return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
+			return Ok(result);
 		}
 
-		[HttpPut]
-		public async Task<IActionResult> Update(ProjectVM item)
+		[HttpPut("{id}")]
+		public async Task<IActionResult> Update(Guid id, ProjectVM item)
 		{
 			var newItem = _mapper.Map<Project>(item); // DTO → Entity
-			var editItem = _dbContext.Projects.Single(x => x.Id == item.Id);
+			var editItem = _dbContext.Projects.Single(x => x.Id == id);
+			editItem.UpdatedAt = DateTime.UtcNow;
 			if (editItem == null)
 				return BadRequest("Không tồn tại dữ liệu");
 			_mapper.Map<ProjectVM, Project>(item, editItem);
@@ -77,7 +78,8 @@ namespace Text2Diagram_Backend.Controllers
 		public ActionResult PartialUpdate(Guid id, [FromBody] JsonPatchDocument patchModel)
 		{
 			var editItem = _dbContext.Projects.Single(x => x.Id == id);
-			if (editItem == null)
+            editItem.UpdatedAt = DateTime.UtcNow;
+            if (editItem == null)
 				return BadRequest("Không tồn tại dữ liệu.");
 
 			var itemVm = _mapper.Map<Project, ProjectVM>(editItem);

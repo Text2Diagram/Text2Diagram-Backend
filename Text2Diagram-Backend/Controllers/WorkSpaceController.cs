@@ -21,31 +21,34 @@ namespace Text2Diagram_Backend.Controllers
 		}
 
 		[HttpGet]
-		public IActionResult GetAll(int page, int pageSize)
+		public async Task<IActionResult> GetAll(int page, int pageSize)
 		{
-			var result = _dbContext.Workspaces.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-			return Ok(FormatData.FormatDataFunc(page, pageSize, result));
+			page = page == null || page == 0 ? 1 : page;
+			pageSize = pageSize == null || pageSize == 0 ? 20 : pageSize;
+			var temp = await _dbContext.Workspaces.ToListAsync();
+			var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+			var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
+			return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
 		}
 
-        [HttpGet("ownerId/{id}")]
-        public async Task<IActionResult> GetByOwnerId(string id)
-        {
-            var result = await _dbContext.Workspaces.SingleOrDefaultAsync(x => x.OwnerId == id);
+    [HttpGet("ownerId/{id}")]
+    public async Task<IActionResult> GetByOwnerId(string id)
+    {
+        var result = await _dbContext.Workspaces.SingleOrDefaultAsync(x => x.OwnerId == id);
 
-            if (result == null)
-                return NotFound();
+        if (result == null)
+            return NotFound();
+        return Ok(result);
+    }
 
-            return Ok(result);
-        }
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetSingle(Guid id)
+    {
+        var result = await _dbContext.Workspaces.FindAsync(id);
+        return Ok(result);
+    }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetSingle(Guid id)
-        {
-            var result = await _dbContext.Workspaces.FindAsync(id);
-            return Ok(result);
-        }
-
-        [HttpPost]
+    [HttpPost]
 		public async Task<IActionResult> Create(WorkspaceVM item)
 		{
 			var newItem = _mapper.Map<Workspace>(item); // DTO → Entity

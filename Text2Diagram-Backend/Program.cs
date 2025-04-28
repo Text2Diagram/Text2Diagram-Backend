@@ -10,6 +10,8 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
 using Ollama;
+using Text2Diagram_Backend.Features.ERD.Components;
+using Text2Diagram_Backend.ERD.Generators.ERDiagramGenerator;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +20,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+	options.JsonSerializerOptions.IgnoreNullValues = true;
+}); ;
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -60,34 +65,16 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
+builder.Services.AddSingleton<ERDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForER>();
 builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
-
-
-
-
+builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForER>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Software Diagram Generator Api", Version = "v1" });
-
-    // Swagger 2.+ support
-    //                var security = new Dictionary<string, IEnumerable<string>>
-    //                {
-    //                    {"Bearer", new string[] { }},
-    //                };
-    //                
-    //                c.AddSecurityDefinition("Bearer",
-    //                    new OpenApiSecurityScheme()
-    //                    {
-    //                        In = ParameterLocation.Header,
-    //                        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-    //                      Enter 'Bearer' [space] and then your token in the text input below.
-    //                      \r\n\r\nExample: 'Bearer 12345abcdef'",
-    //                        Name = "Authorization", 
-    //                        Type = SecuritySchemeType.ApiKey 
-    //                    });
     c.AddSecurityDefinition("Authorization", new OpenApiSecurityScheme
     {
         Description = "Api key needed to access the endpoints. Authorization: Bearer xxxx",
@@ -133,7 +120,12 @@ app.UseCors();
 // Configure the HTTP request pipeline.
 // Enable Swagger in non-development environments
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(c =>
+{
+	c.SwaggerEndpoint("/swagger/v1/swagger.json", "Software Diagram Generator Api v1");
+});
+
+
 
 
 app.UseExceptionHandler();

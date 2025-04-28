@@ -29,7 +29,7 @@ public class DiagramsController : ControllerBase
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
         var result = await diagramGenerator.GenerateAsync(request.Input);
-        return Ok(result);
+        return Ok(FormatData.FormatDataFunc(0,0,0,result));
     }
 
 }

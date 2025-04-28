@@ -1,4 +1,6 @@
-﻿using System.Data;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Text.Json;
 
 namespace Text2Diagram_Backend.Data.Models
 {
@@ -6,7 +8,9 @@ namespace Text2Diagram_Backend.Data.Models
 	{
 		public Guid Id { get; init; } = Guid.NewGuid();
 		public Guid WorkspaceId { set; get; }
-		public string Data { get; init; } = string.Empty;
+
+		[Column(TypeName = "jsonb")]
+		public object Data { get; set; }
 		public string Name { get; init; } = string.Empty;
 		public string Thumbnail { get; init; } = string.Empty;
 		public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
@@ -14,7 +18,7 @@ namespace Text2Diagram_Backend.Data.Models
 
 		private Project() { }
 
-		public Project(Guid workspaceId, string data, string name, string thumbnail)
+		public Project(Guid workspaceId, object data, string name, string thumbnail)
 		{
 			Id = Guid.NewGuid();
 			WorkspaceId = workspaceId;

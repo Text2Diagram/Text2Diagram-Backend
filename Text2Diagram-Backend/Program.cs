@@ -9,8 +9,8 @@ using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
 using Ollama;
 using Text2Diagram_Backend.Features.ERD.Components;
-using Text2Diagram_Backend.ERD.Generators.ERDiagramGenerator;
 using Microsoft.Extensions.Options;
+using Text2Diagram_Backend.Features.ERD;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,9 +61,9 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzerForER>();
+builder.Services.AddSingleton<AnalyzerForER>();
 builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
-builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForER>());
+builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<AnalyzerForER>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

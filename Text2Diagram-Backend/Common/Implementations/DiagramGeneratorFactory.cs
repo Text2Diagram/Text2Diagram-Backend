@@ -1,6 +1,6 @@
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data.Models;
-using Text2Diagram_Backend.ERD.Generators.ERDiagramGenerator;
+using Text2Diagram_Backend.Features.ERD;
 using Text2Diagram_Backend.Features.Flowchart;
 
 namespace Text2Diagram_Backend.Common.Implementations;

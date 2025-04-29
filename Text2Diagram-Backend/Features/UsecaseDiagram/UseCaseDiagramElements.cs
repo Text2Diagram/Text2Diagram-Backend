@@ -1,4 +1,4 @@
-﻿namespace Text2Diagram_Backend.UsecaseDiagram;
+﻿namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
 public record UseCaseDiagramElements(
     List<string> Actors,

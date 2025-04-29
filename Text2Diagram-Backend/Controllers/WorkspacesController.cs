@@ -10,12 +10,11 @@ namespace Text2Diagram_Backend.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class WorkspaceMemberController : ControllerBase
+public class WorkspacesController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IMapper _mapper;
-
-    public WorkspaceMemberController(ApplicationDbContext dbContext, IMapper mapper)
+    public WorkspacesController(ApplicationDbContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
         _mapper = mapper;
@@ -26,38 +25,47 @@ public class WorkspaceMemberController : ControllerBase
     {
         page = page == 0 ? 1 : page;
         pageSize = pageSize == 0 ? 20 : pageSize;
-        var temp = await _dbContext.WorkspaceMembers.ToListAsync();
+        var temp = await _dbContext.Workspaces.ToListAsync();
         var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
         return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
     }
 
+    [HttpGet("ownerId/{id}")]
+    public async Task<IActionResult> GetByOwnerId(string id)
+    {
+        var result = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.OwnerId == id);
+
+        if (result == null)
+            return NotFound();
+        return Ok(result);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetSingle(Guid id)
     {
-        var result = await _dbContext.WorkspaceMembers.FindAsync(id);
-        if (result == null)
-            return NotFound("Không tồn tại dữ liệu");
-        return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
+        var result = await _dbContext.Workspaces.FindAsync(id);
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(WorkspaceMemberVM item)
+    public async Task<IActionResult> Create(WorkspaceVM item)
     {
-        var newItem = _mapper.Map<WorkspaceMember>(item);
-        _dbContext.WorkspaceMembers.Add(newItem);
+        var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
+        _dbContext.Workspaces.Add(newItem);
         await _dbContext.SaveChangesAsync();
-        return Ok(FormatData.FormatDataFunc(0, 0, 0, newItem));
+        var result = await _dbContext.Workspaces.FindAsync(newItem.Id);
+        return Ok(result);
     }
 
-    [HttpPut]
-    public async Task<IActionResult> Update(WorkspaceMemberVM item)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, WorkspaceVM item)
     {
-        var newItem = _mapper.Map<WorkspaceMember>(item);
-        var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == item.Id);
+        var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
+        var editItem = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu");
-        _mapper.Map<WorkspaceMemberVM, WorkspaceMember>(item, editItem);
+        _mapper.Map<WorkspaceVM, Workspace>(item, editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
     }
@@ -65,15 +73,15 @@ public class WorkspaceMemberController : ControllerBase
     [HttpPatch("{id}")]
     public async Task<ActionResult> PartialUpdate(Guid id, [FromBody] JsonPatchDocument patchModel)
     {
-        var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == id);
+        var editItem = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu.");
 
-        var itemVm = _mapper.Map<WorkspaceMember, WorkspaceMemberVM>(editItem);
+        var itemVm = _mapper.Map<Workspace, WorkspaceVM>(editItem);
 
         patchModel.ApplyTo(itemVm);
 
-        _mapper.Map<WorkspaceMemberVM, WorkspaceMember>(itemVm, editItem);
+        _mapper.Map<WorkspaceVM, Workspace>(itemVm, editItem);
 
         await _dbContext.SaveChangesAsync();
         return Ok();
@@ -82,10 +90,10 @@ public class WorkspaceMemberController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == id);
+        var editItem = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu");
-        _dbContext.WorkspaceMembers.Remove(editItem);
+        _dbContext.Workspaces.Remove(editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
     }

@@ -9,12 +9,12 @@ namespace Text2Diagram_Backend.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ProjectController : ControllerBase
+public class ProjectsController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IMapper _mapper;
 
-    public ProjectController(ApplicationDbContext dbContext, IMapper mapper)
+    public ProjectsController(ApplicationDbContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
         _mapper = mapper;

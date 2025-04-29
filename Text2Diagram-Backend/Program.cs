@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
 using Text2Diagram_Backend;
@@ -10,6 +10,7 @@ using Text2Diagram_Backend.Services;
 using Ollama;
 using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.ERD.Generators.ERDiagramGenerator;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,12 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
 
-builder.Services.AddControllers().AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.IgnoreNullValues = true;
-}); ;
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -72,7 +68,11 @@ builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Software Diagram Generator Api", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Software Diagram Generator Api",
+        Version = "v1"
+    });
     c.AddSecurityDefinition("Authorization", new OpenApiSecurityScheme
     {
         Description = "Api key needed to access the endpoints. Authorization: Bearer xxxx",
@@ -95,8 +95,8 @@ builder.Services.AddSwaggerGen(c =>
                             },
                         },
                         new string[] {}
-                    }
-            });
+        }
+    });
 });
 
 

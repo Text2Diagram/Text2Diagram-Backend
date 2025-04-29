@@ -10,11 +10,11 @@ namespace Text2Diagram_Backend.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class WorkSpaceController : Controller
+public class SharesController : Controller
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IMapper _mapper;
-    public WorkSpaceController(ApplicationDbContext dbContext, IMapper mapper)
+    public SharesController(ApplicationDbContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
         _mapper = mapper;
@@ -25,47 +25,38 @@ public class WorkSpaceController : Controller
     {
         page = page == 0 ? 1 : page;
         pageSize = pageSize == 0 ? 20 : pageSize;
-        var temp = await _dbContext.Workspaces.ToListAsync();
+        var temp = await _dbContext.Shares.ToListAsync();
         var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
         return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
     }
 
-    [HttpGet("ownerId/{id}")]
-    public async Task<IActionResult> GetByOwnerId(string id)
-    {
-        var result = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.OwnerId == id);
-
-        if (result == null)
-            return NotFound();
-        return Ok(result);
-    }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> GetSingle(Guid id)
     {
-        var result = await _dbContext.Workspaces.FindAsync(id);
-        return Ok(result);
+        var result = await _dbContext.Shares.FindAsync(id);
+        if (result == null)
+            return NotFound("Không tồn tại dữ liệu");
+        return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(WorkspaceVM item)
+    public async Task<IActionResult> Create(ShareVM item)
     {
-        var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
-        _dbContext.Workspaces.Add(newItem);
+        var newItem = _mapper.Map<Share>(item);
+        _dbContext.Shares.Add(newItem);
         await _dbContext.SaveChangesAsync();
-        var result = await _dbContext.Workspaces.FindAsync(newItem.Id);
-        return Ok(result);
+        return Ok(FormatData.FormatDataFunc(0, 0, 0, newItem));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, WorkspaceVM item)
+    [HttpPut]
+    public async Task<IActionResult> Update(ShareVM item)
     {
-        var newItem = _mapper.Map<Workspace>(item); // DTO → Entity
-        var editItem = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.Id == id);
+        var newItem = _mapper.Map<Share>(item);
+        var editItem = await _dbContext.Shares.FirstOrDefaultAsync(x => x.Id == item.Id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu");
-        _mapper.Map<WorkspaceVM, Workspace>(item, editItem);
+        _mapper.Map<ShareVM, Share>(item, editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
     }
@@ -73,15 +64,15 @@ public class WorkSpaceController : Controller
     [HttpPatch("{id}")]
     public async Task<ActionResult> PartialUpdate(Guid id, [FromBody] JsonPatchDocument patchModel)
     {
-        var editItem = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.Id == id);
+        var editItem = await _dbContext.Shares.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu.");
 
-        var itemVm = _mapper.Map<Workspace, WorkspaceVM>(editItem);
+        var itemVm = _mapper.Map<Share, ShareVM>(editItem);
 
         patchModel.ApplyTo(itemVm);
 
-        _mapper.Map<WorkspaceVM, Workspace>(itemVm, editItem);
+        _mapper.Map<ShareVM, Share>(itemVm, editItem);
 
         await _dbContext.SaveChangesAsync();
         return Ok();
@@ -90,10 +81,10 @@ public class WorkSpaceController : Controller
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var editItem = await _dbContext.Workspaces.FirstOrDefaultAsync(x => x.Id == id);
+        var editItem = await _dbContext.Shares.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu");
-        _dbContext.Workspaces.Remove(editItem);
+        _dbContext.Shares.Remove(editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
     }

@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.Ollama;
-using Microsoft.SemanticKernel.ChatCompletion;
 using Text2Diagram_Backend;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
@@ -22,7 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-	options.JsonSerializerOptions.IgnoreNullValues = true;
+    options.JsonSerializerOptions.IgnoreNullValues = true;
 }); ;
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -118,15 +116,12 @@ var app = builder.Build();
 
 app.UseCors();
 // Configure the HTTP request pipeline.
-// Enable Swagger in non-development environments
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-	c.SwaggerEndpoint("/swagger/v1/swagger.json", "Software Diagram Generator Api v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Software Diagram Generator Api v1");
 });
-
-
-
 
 app.UseExceptionHandler();
 

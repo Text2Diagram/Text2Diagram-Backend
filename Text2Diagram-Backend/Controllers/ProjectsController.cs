@@ -43,9 +43,9 @@ public class ProjectsController : ControllerBase
     {
         page = page == 0 ? 1 : page;
         pageSize = pageSize == 0 ? 20 : pageSize;
-        var temp = await _dbContext.Projects.Where(x => x.WorkspaceId == code).ToListAsync();
+        var temp = await _dbContext.Projects.Where(x => x.WorkspaceId == code).OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt).ToListAsync();
         var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        int totalPage = temp.Count();
+        var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
         return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
     }
 

@@ -12,7 +12,7 @@ public class Share
 
     private Share() { }
 
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid Id { get; init; }
     public Guid DiagramId { get; private set; }
     public string UserId { get; init; } = string.Empty;
     public SharePermission Permission { get; init; }

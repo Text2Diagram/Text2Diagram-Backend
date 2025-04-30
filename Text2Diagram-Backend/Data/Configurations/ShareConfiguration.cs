@@ -10,9 +10,10 @@ public class ShareConfiguration : IEntityTypeConfiguration<Share>
     public void Configure(EntityTypeBuilder<Share> builder)
     {
         builder.HasKey(s => s.Id);
-        builder.Property(d => d.Id)
-            .ValueGeneratedNever();
-        builder.Property(s => s.DiagramId).IsRequired();
+		builder.Property(d => d.Id)
+			.IsRequired()
+			.HasDefaultValueSql("gen_random_uuid()");
+		builder.Property(s => s.DiagramId).IsRequired();
         builder.Property(s => s.UserId).IsRequired();
 
         builder.Property(s => s.Permission)

@@ -10,9 +10,10 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
     public void Configure(EntityTypeBuilder<WorkspaceMember> builder)
     {
         builder.HasKey(wm => wm.Id);
-        builder.Property(wm => wm.Id)
-            .ValueGeneratedNever();
-        builder.Property(wm => wm.UserId)
+		builder.Property(d => d.Id)
+			.IsRequired()
+			.HasDefaultValueSql("gen_random_uuid()");
+		builder.Property(wm => wm.UserId)
             .IsRequired();
         builder.Property(wm => wm.WorkspaceId)
             .IsRequired();

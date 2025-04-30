@@ -12,7 +12,10 @@ public class DiagramConfiguration : IEntityTypeConfiguration<Diagram>
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id)
             .ValueGeneratedNever();
-        builder.Property(d => d.Title).IsRequired().HasMaxLength(100);
+		builder.Property(d => d.Id)
+			.IsRequired()
+			.HasDefaultValueSql("gen_random_uuid()");
+		builder.Property(d => d.Title).IsRequired().HasMaxLength(100);
         builder.Property(d => d.Description).HasMaxLength(1000);
 
 

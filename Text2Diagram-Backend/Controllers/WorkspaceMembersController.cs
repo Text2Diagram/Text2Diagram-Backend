@@ -10,13 +10,12 @@ namespace Text2Diagram_Backend.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-
-public class DiagramsController : ControllerBase
+public class WorkspaceMembersController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IMapper _mapper;
 
-    public DiagramsController(ApplicationDbContext dbContext, IMapper mapper)
+    public WorkspaceMembersController(ApplicationDbContext dbContext, IMapper mapper)
     {
         _dbContext = dbContext;
         _mapper = mapper;
@@ -27,7 +26,7 @@ public class DiagramsController : ControllerBase
     {
         page = page == 0 ? 1 : page;
         pageSize = pageSize == 0 ? 20 : pageSize;
-        var temp = await _dbContext.Diagrams.ToListAsync();
+        var temp = await _dbContext.WorkspaceMembers.ToListAsync();
         var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
         return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
@@ -36,62 +35,58 @@ public class DiagramsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetSingle(Guid id)
     {
-        var result = await _dbContext.Diagrams.FindAsync(id);
-
+        var result = await _dbContext.WorkspaceMembers.FindAsync(id);
         if (result == null)
-            return NotFound($"Diagram with id {id} not found.");
-
+            return NotFound("Không tồn tại dữ liệu");
         return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(DiagramVM item)
+    public async Task<IActionResult> Create(WorkspaceMemberVM item)
     {
-        var newItem = _mapper.Map<Diagram>(item);
-        _dbContext.Diagrams.Add(newItem);
+        var newItem = _mapper.Map<WorkspaceMember>(item);
+        _dbContext.WorkspaceMembers.Add(newItem);
         await _dbContext.SaveChangesAsync();
         return Ok(FormatData.FormatDataFunc(0, 0, 0, newItem));
     }
 
     [HttpPut]
-    public async Task<IActionResult> Update(DiagramVM item)
+    public async Task<IActionResult> Update(WorkspaceMemberVM item)
     {
-        var newItem = _mapper.Map<Diagram>(item);
-        var editItem = _dbContext.Diagrams.Single(x => x.Id == item.Id);
+        var newItem = _mapper.Map<WorkspaceMember>(item);
+        var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == item.Id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu");
-        _mapper.Map<DiagramVM, Diagram>(item, editItem);
+        _mapper.Map<WorkspaceMemberVM, WorkspaceMember>(item, editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
     }
-    //"e1ab165c-ba3c-482d-88d5-098b29109472"
 
     [HttpPatch("{id}")]
-    public ActionResult PartialUpdate(Guid id, [FromBody] JsonPatchDocument patchModel)
+    public async Task<ActionResult> PartialUpdate(Guid id, [FromBody] JsonPatchDocument patchModel)
     {
-        var editItem = _dbContext.Diagrams.Single(x => x.Id == id);
+        var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
-            return BadRequest("Không tồn tại dữ liệu.");
+            return NotFound("Không tồn tại dữ liệu.");
 
-        var itemVm = _mapper.Map<Diagram, DiagramVM>(editItem);
+        var itemVm = _mapper.Map<WorkspaceMember, WorkspaceMemberVM>(editItem);
 
         patchModel.ApplyTo(itemVm);
 
-        _mapper.Map<DiagramVM, Diagram>(itemVm, editItem);
+        _mapper.Map<WorkspaceMemberVM, WorkspaceMember>(itemVm, editItem);
 
-        _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync();
         return Ok();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var editItem = _dbContext.Diagrams.Single(x => x.Id == id);
+        var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
-            return BadRequest("Không tồn tại dữ liệu");
-        _dbContext.Diagrams.Remove(editItem);
+            return NotFound("Không tồn tại dữ liệu");
+        _dbContext.WorkspaceMembers.Remove(editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
     }
-
 }

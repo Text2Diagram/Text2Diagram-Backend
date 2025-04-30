@@ -1,8 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.Ollama;
-using Microsoft.SemanticKernel.ChatCompletion;
 using Text2Diagram_Backend;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
@@ -10,6 +8,9 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
 using Ollama;
+using Text2Diagram_Backend.Features.ERD.Components;
+using Microsoft.Extensions.Options;
+using Text2Diagram_Backend.Features.ERD;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +20,6 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
 
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -60,34 +59,20 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
+builder.Services.AddSingleton<ERDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<AnalyzerForER>();
 builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
-
-
-
-
+builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<AnalyzerForER>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Software Diagram Generator Api", Version = "v1" });
-
-    // Swagger 2.+ support
-    //                var security = new Dictionary<string, IEnumerable<string>>
-    //                {
-    //                    {"Bearer", new string[] { }},
-    //                };
-    //                
-    //                c.AddSecurityDefinition("Bearer",
-    //                    new OpenApiSecurityScheme()
-    //                    {
-    //                        In = ParameterLocation.Header,
-    //                        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-    //                      Enter 'Bearer' [space] and then your token in the text input below.
-    //                      \r\n\r\nExample: 'Bearer 12345abcdef'",
-    //                        Name = "Authorization", 
-    //                        Type = SecuritySchemeType.ApiKey 
-    //                    });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Software Diagram Generator Api",
+        Version = "v1"
+    });
     c.AddSecurityDefinition("Authorization", new OpenApiSecurityScheme
     {
         Description = "Api key needed to access the endpoints. Authorization: Bearer xxxx",
@@ -110,8 +95,8 @@ builder.Services.AddSwaggerGen(c =>
                             },
                         },
                         new string[] {}
-                    }
-            });
+        }
+    });
 });
 
 
@@ -131,10 +116,12 @@ var app = builder.Build();
 
 app.UseCors();
 // Configure the HTTP request pipeline.
-// Enable Swagger in non-development environments
-app.UseSwagger();
-app.UseSwaggerUI();
 
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Software Diagram Generator Api v1");
+});
 
 app.UseExceptionHandler();
 

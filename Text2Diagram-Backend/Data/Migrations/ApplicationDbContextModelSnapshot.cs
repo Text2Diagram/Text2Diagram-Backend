@@ -83,8 +83,12 @@ namespace Text2Diagram_Backend.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+<<<<<<< HEAD
                     b.Property<JsonDocument>("Data")
                         .IsRequired()
+=======
+                    b.Property<JsonElement>("Data")
+>>>>>>> 6d93e69383f3e1a323143e7ca054ffbb65b00141
                         .HasColumnType("jsonb");
 
                     b.Property<string>("Name")

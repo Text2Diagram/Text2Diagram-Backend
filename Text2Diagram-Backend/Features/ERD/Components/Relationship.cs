@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿namespace Text2Diagram_Backend.Features.ERD.Components
 {
 	public class Relationship
@@ -16,4 +17,15 @@
 		ZeroOrMore,  // Zero or more (no upper limit)
 		OneOrMore, //One or more (no upper limit)
 	}
+=======
+﻿namespace Text2Diagram_Backend.Features.ERD.Components;
+
+public class Relationship
+{
+    public string SourceEntityName { get; set; } = string.Empty;
+    public string DestinationEntityName { get; set; } = string.Empty;
+    public RelationshipType SourceRelationshipType { get; set; }
+    public RelationshipType DestinationRelationshipType { get; set; }
+    public string Description { get; set; } = string.Empty;
+>>>>>>> 6d93e69383f3e1a323143e7ca054ffbb65b00141
 }

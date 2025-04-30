@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.EntityFrameworkCore;
 using Text2Diagram_Backend.Data.Models;
+using System.Reflection.Emit;
+using System.Text.Json;
 
 namespace Text2Diagram_Backend.Data.Configurations
 {
@@ -15,6 +17,7 @@ namespace Text2Diagram_Backend.Data.Configurations
 			.HasDefaultValueSql("gen_random_uuid()");
 			builder.Property(d => d.WorkspaceId)
 				.IsRequired();
+
 		}
 	}
 }

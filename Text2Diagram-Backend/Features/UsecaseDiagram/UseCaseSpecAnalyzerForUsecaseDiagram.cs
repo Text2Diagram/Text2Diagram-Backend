@@ -2,7 +2,7 @@
 using LangChain.Providers.Ollama;
 using System.Text.Json;
 
-namespace Text2Diagram_Backend.UsecaseDiagram;
+namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
 public class UseCaseSpecAnalyzerForUsecaseDiagram
 {

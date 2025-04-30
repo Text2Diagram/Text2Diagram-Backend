@@ -32,5 +32,11 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .WithOne()
             .HasForeignKey(p => p.WorkspaceId)
             .OnDelete(DeleteBehavior.Cascade);
-    }
+
+		builder.Property(d => d.CreatedAt)
+			.HasDefaultValueSql("NOW()");
+
+		builder.Property(d => d.UpdatedAt)
+			.HasDefaultValueSql("NOW()");
+	}
 }

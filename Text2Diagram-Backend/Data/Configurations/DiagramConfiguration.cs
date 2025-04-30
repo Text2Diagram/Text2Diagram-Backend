@@ -10,8 +10,6 @@ public class DiagramConfiguration : IEntityTypeConfiguration<Diagram>
     public void Configure(EntityTypeBuilder<Diagram> builder)
     {
         builder.HasKey(d => d.Id);
-        builder.Property(d => d.Id)
-            .ValueGeneratedNever();
 		builder.Property(d => d.Id)
 			.IsRequired()
 			.HasDefaultValueSql("gen_random_uuid()");
@@ -40,5 +38,11 @@ public class DiagramConfiguration : IEntityTypeConfiguration<Diagram>
             .WithOne()
             .HasForeignKey(s => s.DiagramId)
             .OnDelete(DeleteBehavior.Cascade);
-    }
+
+        builder.Property(d => d.CreatedAt)
+            .HasDefaultValueSql("NOW()");
+
+		builder.Property(d => d.UpdatedAt)
+			.HasDefaultValueSql("NOW()");
+	}
 }

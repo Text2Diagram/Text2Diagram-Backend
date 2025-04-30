@@ -23,5 +23,5 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
                 v => v.ToString(),
                 v => (WorkspaceRole)Enum.Parse(typeof(WorkspaceRole), v)
             ));
-    }
+	}
 }

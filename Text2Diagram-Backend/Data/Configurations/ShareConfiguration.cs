@@ -27,5 +27,5 @@ public class ShareConfiguration : IEntityTypeConfiguration<Share>
             .WithMany(d => d.Shares)
             .HasForeignKey(s => s.DiagramId)
             .OnDelete(DeleteBehavior.Cascade);
-    }
+	}
 }

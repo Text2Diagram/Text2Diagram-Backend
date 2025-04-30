@@ -18,6 +18,12 @@ namespace Text2Diagram_Backend.Data.Configurations
 			builder.Property(d => d.WorkspaceId)
 				.IsRequired();
 
+			builder.Property(d => d.CreatedAt)
+			.HasDefaultValueSql("NOW()");
+
+			builder.Property(d => d.UpdatedAt)
+				.HasDefaultValueSql("NOW()");
+
 		}
 	}
 }

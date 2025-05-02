@@ -10,11 +10,11 @@ namespace Text2Diagram_Backend.Features.Flowchart;
 public class FlowchartDiagramGenerator : IDiagramGenerator
 {
     private readonly ILogger<FlowchartDiagramGenerator> logger;
-    private readonly IAnalyzer<FlowchartDiagram> analyzer;
+    private readonly UseCaseSpecAnalyzerForFlowchart analyzer;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
-        IAnalyzer<FlowchartDiagram> analyzer)
+        UseCaseSpecAnalyzerForFlowchart analyzer)
     {
         this.logger = logger;
         this.analyzer = analyzer;

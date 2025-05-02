@@ -8,12 +8,10 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
 using Ollama;
-using Text2Diagram_Backend.Features.ERD.Components;
-using Microsoft.Extensions.Options;
 using Text2Diagram_Backend.Features.ERD;
-using OpenAI;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
+using Text2Diagram_Backend.Features.ERD.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
-	options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -65,7 +63,7 @@ builder.Services.AddSingleton(sp =>
         )
         //.AddOllamaChatCompletion(llmId, httpClient)
         .Build();
-#pragma warning restore 
+#pragma warning restore
     return kernel;
 });
 
@@ -80,8 +78,8 @@ builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<AnalyzerForER>();
-builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
-builder.Services.AddSingleton<IAnalyzer<ERDiagram>>(sp => sp.GetRequiredService<AnalyzerForER>());
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<AnalyzerForER>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

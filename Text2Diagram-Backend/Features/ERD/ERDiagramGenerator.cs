@@ -7,85 +7,85 @@ namespace Text2Diagram_Backend.Features.ERD;
 
 public class ERDiagramGenerator : IDiagramGenerator
 {
-	private readonly ILogger<ERDiagramGenerator> logger;
-	private readonly IAnalyzer<ERDiagram> analyzer;
+    private readonly ILogger<ERDiagramGenerator> logger;
+    private readonly AnalyzerForER analyzer;
 
-	public ERDiagramGenerator(
-		ILogger<ERDiagramGenerator> logger,
-		IAnalyzer<ERDiagram> analyzer)
-	{
-		this.logger = logger;
-		this.analyzer = analyzer;
-	}
+    public ERDiagramGenerator(
+        ILogger<ERDiagramGenerator> logger,
+        AnalyzerForER analyzer)
+    {
+        this.logger = logger;
+        this.analyzer = analyzer;
+    }
 
-	public async Task<string> GenerateAsync(string input)
-	{
-		try
-		{
-			// Extract and generate diagram structure directly from input
-			var diagram = await analyzer.AnalyzeAsync(input);
+    public async Task<string> GenerateAsync(string input)
+    {
+        try
+        {
+            // Extract and generate diagram structure directly from input
+            var diagram = await analyzer.AnalyzeAsync(input);
 
-			// Generate Mermaid syntax
-			string mermaidCode = GenerateMermaidCode(diagram);
+            // Generate Mermaid syntax
+            string mermaidCode = GenerateMermaidCode(diagram);
 
-			logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
+            logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
 
-			return mermaidCode;
-		}
-		catch (Exception ex)
-		{
-			logger.LogError(ex, "Error generating flowchart diagram");
-			throw;
-		}
-	}
+            return mermaidCode;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error generating flowchart diagram");
+            throw;
+        }
+    }
 
-	/// <summary>
-	/// Generates Mermaid.js compatible syntax for the ER diagram.
-	/// </summary>
-	/// <param name="diagram">The ER diagram object containing entities and relationships</param>
-	/// <returns>A string containing Mermaid.js ER diagram syntax</returns>
-	private string GenerateMermaidCode(ERDiagram diagram)
-	{
-		var mermaid = new StringBuilder();
+    /// <summary>
+    /// Generates Mermaid.js compatible syntax for the ER diagram.
+    /// </summary>
+    /// <param name="diagram">The ER diagram object containing entities and relationships</param>
+    /// <returns>A string containing Mermaid.js ER diagram syntax</returns>
+    private string GenerateMermaidCode(ERDiagram diagram)
+    {
+        var mermaid = new StringBuilder();
 
-		// Start ER diagram definition
-		mermaid.AppendLine("erDiagram");
+        // Start ER diagram definition
+        mermaid.AppendLine("erDiagram");
 
-		foreach (var entity in diagram.Entites)
-		{
-			mermaid.AppendLine($"    {entity.Name} {{");
-			foreach (var prop in entity.Properties)
-			{
-				mermaid.AppendLine($"        {prop.Type} {prop.Name.Trim().Replace(' ', '_')} {prop.Role} \"{prop.Description}\"");
-			}
-			mermaid.AppendLine("    }");
-		}
+        foreach (var entity in diagram.Entites)
+        {
+            mermaid.AppendLine($"    {entity.Name} {{");
+            foreach (var prop in entity.Properties)
+            {
+                mermaid.AppendLine($"        {prop.Type} {prop.Name.Trim().Replace(' ', '_')} {prop.Role} \"{prop.Description}\"");
+            }
+            mermaid.AppendLine("    }");
+        }
 
-		foreach (var relation in diagram.Relationships)
-		{
-			string sourceConnector = GetEdgeConnector(relation.SourceRelationshipType, true);
-			string destConnector = GetEdgeConnector(relation.DestinationRelationshipType, false);
-			mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
-		}
+        foreach (var relation in diagram.Relationships)
+        {
+            string sourceConnector = GetEdgeConnector(relation.SourceRelationshipType, true);
+            string destConnector = GetEdgeConnector(relation.DestinationRelationshipType, false);
+            mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
+        }
 
-		return mermaid.ToString();
-	}
+        return mermaid.ToString();
+    }
 
-	/// <summary>
-	/// Determines the appropriate connector symbol for a relationship type.
-	/// </summary>
-	/// <param name="type">The relationship type to evaluate</param>
-	/// <param name="isLeft">Indicates if this is the left (source) side of the relationship</param>
-	/// <returns>A string representing the Mermaid.js connector symbol</returns>
-	private string GetEdgeConnector(RelationshipType type, bool isLeft)
-	{
-		return type switch
-		{
-			RelationshipType.ZeroOrOne => isLeft ? "|o" : "o|",
-			RelationshipType.ExactlyOne => "||",
-			RelationshipType.ZeroOrMore => isLeft ? "}o" : "o{",
-			RelationshipType.OneOrMore => isLeft ? "}|" : "|{",
-			_ => isLeft ? "|o" : "o|"
-		};
-	}
+    /// <summary>
+    /// Determines the appropriate connector symbol for a relationship type.
+    /// </summary>
+    /// <param name="type">The relationship type to evaluate</param>
+    /// <param name="isLeft">Indicates if this is the left (source) side of the relationship</param>
+    /// <returns>A string representing the Mermaid.js connector symbol</returns>
+    private string GetEdgeConnector(RelationshipType type, bool isLeft)
+    {
+        return type switch
+        {
+            RelationshipType.ZeroOrOne => isLeft ? "|o" : "o|",
+            RelationshipType.ExactlyOne => "||",
+            RelationshipType.ZeroOrMore => isLeft ? "}o" : "o{",
+            RelationshipType.OneOrMore => isLeft ? "}|" : "|{",
+            _ => isLeft ? "|o" : "o|"
+        };
+    }
 }

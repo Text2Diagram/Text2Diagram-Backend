@@ -12,7 +12,7 @@ namespace Text2Diagram_Backend.Features.Flowchart;
 /// Analyzes structured use case specifications to extract elements for flowchart generation.
 /// This analyzer is optimized for structured text following use case specification format.
 /// </summary>
-public class UseCaseSpecAnalyzerForFlowchart : IAnalyzer<FlowchartDiagram>
+public class UseCaseSpecAnalyzerForFlowchart
 {
     private readonly Kernel kernel;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> logger;

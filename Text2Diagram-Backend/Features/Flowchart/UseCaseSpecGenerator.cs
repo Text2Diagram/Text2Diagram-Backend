@@ -1,5 +1,3 @@
-using LangChain.Providers;
-using LangChain.Providers.Ollama;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 

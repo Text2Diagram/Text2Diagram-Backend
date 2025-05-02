@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
-using Text2Diagram_Backend;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
@@ -12,6 +11,7 @@ using Text2Diagram_Backend.Features.ERD;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
 using Text2Diagram_Backend.Features.ERD.Components;
+using Text2Diagram_Backend.HttpHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -138,6 +138,8 @@ app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Software Diagram Generator Api v1");
 });
+
+app.UseReprLogging();
 
 app.UseExceptionHandler();
 

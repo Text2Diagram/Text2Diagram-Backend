@@ -13,7 +13,7 @@ namespace Text2Diagram_Backend.Features.ERD;
 /// Analyzes domain descriptions to extract elements for Entity Relationship Diagram (ERD) generation.
 /// This analyzer is optimized for text describing entities and relationships.
 /// </summary>
-public class AnalyzerForER : IAnalyzer<ERDiagram>
+public class AnalyzerForER
 {
     private readonly Kernel kernel;
     private readonly ILogger<AnalyzerForER> logger;

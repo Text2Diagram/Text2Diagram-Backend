@@ -11,9 +11,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Remove="Data\Migrations\**" />
 		<Compile Remove="Rag\**" />
+		<Content Remove="Data\Migrations\**" />
 		<Content Remove="Rag\**" />
+		<EmbeddedResource Remove="Data\Migrations\**" />
 		<EmbeddedResource Remove="Rag\**" />
+		<None Remove="Data\Migrations\**" />
 		<None Remove="Rag\**" />
 	</ItemGroup>
 
@@ -54,10 +58,6 @@
 
 	<ItemGroup>
 		<Protobuf Include="Protos/mermaid.proto" GrpcServices="Client" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Data\Migrations\" />
 	</ItemGroup>
 
 </Project>

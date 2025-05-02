@@ -9,24 +9,9 @@ public class Diagram
     public DiagramType DiagramType { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; set; }
-    public bool IsPublic { get; set; } = false;
     public string UserId { get; init; } = string.Empty;
+    public Guid ProjectId { get; set; }
     public string DiagramJson { get; set; } = string.Empty;
 
-    public ICollection<Share> Shares { get; set; } = [];
-
     private Diagram() { }
-
-    public Diagram(string title, string diagramData, string userId, DiagramType diagramType, string? description, string diagramJson)
-    {
-        Id = Guid.NewGuid();
-        Title = title;
-        DiagramData = diagramData;
-        Description = description;
-        CreatedAt = DateTime.UtcNow;
-        UserId = userId;
-        DiagramType = diagramType;
-        IsPublic = true;
-        DiagramJson = diagramJson;
-    }
 }

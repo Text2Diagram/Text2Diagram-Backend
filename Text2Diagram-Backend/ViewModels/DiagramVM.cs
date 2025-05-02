@@ -11,8 +11,8 @@ namespace Text2Diagram_Backend.ViewModels
         public DiagramType DiagramType { get; init; }
         public DateTime CreatedAt { get; init; }
         public DateTime? UpdatedAt { get; set; }
-        public bool IsPublic { get; set; } = false;
         public string UserId { get; init; } = string.Empty;
+        public Guid ProjectId { get; init; }
         public string DiagramJson { get; set; } = string.Empty;
     }
 }

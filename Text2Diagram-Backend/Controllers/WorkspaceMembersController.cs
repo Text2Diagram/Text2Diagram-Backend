@@ -42,7 +42,7 @@ public class WorkspaceMembersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(WorkspaceMemberVM item)
+    public async Task<IActionResult> Create([FromBody] WorkspaceMemberVM item)
     {
         var newItem = _mapper.Map<WorkspaceMember>(item);
         _dbContext.WorkspaceMembers.Add(newItem);
@@ -51,7 +51,7 @@ public class WorkspaceMembersController : ControllerBase
     }
 
     [HttpPut]
-    public async Task<IActionResult> Update(WorkspaceMemberVM item)
+    public async Task<IActionResult> Update([FromBody] WorkspaceMemberVM item)
     {
         var newItem = _mapper.Map<WorkspaceMember>(item);
         var editItem = await _dbContext.WorkspaceMembers.FirstOrDefaultAsync(x => x.Id == item.Id);

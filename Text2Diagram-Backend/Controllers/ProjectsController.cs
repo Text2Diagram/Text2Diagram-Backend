@@ -50,7 +50,7 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(ProjectVM item)
+    public async Task<IActionResult> Create([FromBody] ProjectVM item)
     {
         var newItem = _mapper.Map<Project>(item);
         _dbContext.Projects.Add(newItem);
@@ -60,7 +60,7 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, ProjectVM item)
+    public async Task<IActionResult> Update(Guid id, [FromBody] ProjectVM item)
     {
         var newItem = _mapper.Map<Project>(item);
         var editItem = await _dbContext.Projects.FirstOrDefaultAsync(x => x.Id == id);

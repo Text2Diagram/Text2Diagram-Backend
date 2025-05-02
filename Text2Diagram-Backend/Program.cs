@@ -11,6 +11,7 @@ using Ollama;
 using Text2Diagram_Backend.Features.ERD.Components;
 using Microsoft.Extensions.Options;
 using Text2Diagram_Backend.Features.ERD;
+using OpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,14 +39,26 @@ var llmId = builder.Configuration["Ollama:LLM"] ?? throw new InvalidOperationExc
 var ollamaEndpoint = builder.Configuration["Ollama:Endpoint"] ?? throw new InvalidOperationException("Ollama endpoint was not defined.");
 builder.Services.AddSingleton(sp =>
 {
+    var togetherAIApiKey = builder.Configuration["TogetherAI:ApiKey"] ?? throw new InvalidOperationException("TogetherAI:ApiKey was not defined.");
+    var togetherAIModelId = builder.Configuration["TogetherAI:ModelId"] ?? throw new InvalidOperationException("TogetherAI:ModelId was not defined.");
+    var togetherAIEndpoint = "https://api.together.xyz/v1";
+
+    var unifyAIApiKey = builder.Configuration["UnifyAI:ApiKey"] ?? throw new InvalidOperationException("UnifyAI:ApiKey was not defined.");
+    var unifyAIModelId = builder.Configuration["UnifyAI:ModelId"] ?? throw new InvalidOperationException("UnifyAI:ModelId was not defined.");
+    var unifyAIEndpoint = "https://api.unify.ai/v0";
     var httpClient = new HttpClient
     {
-        BaseAddress = new Uri(ollamaEndpoint),
+        BaseAddress = new Uri(togetherAIEndpoint),
         Timeout = TimeSpan.FromMinutes(5)
     };
 #pragma warning disable SKEXP0070
     var kernel = Kernel.CreateBuilder()
-        .AddOllamaChatCompletion(llmId, httpClient)
+        .AddOpenAIChatCompletion(
+            modelId: togetherAIModelId,
+            apiKey: togetherAIApiKey,
+            httpClient: httpClient
+        )
+        //.AddOllamaChatCompletion(llmId, httpClient)
         .Build();
 #pragma warning restore 
     return kernel;

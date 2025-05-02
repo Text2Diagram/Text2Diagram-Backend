@@ -12,6 +12,8 @@ using Text2Diagram_Backend.Features.ERD.Components;
 using Microsoft.Extensions.Options;
 using Text2Diagram_Backend.Features.ERD;
 using OpenAI;
+using Newtonsoft.Json.Serialization;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +22,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+	options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -28,7 +33,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         ?? throw new InvalidOperationException("Connection string 'Database' not found.");
     options.UseNpgsql(connectionString);
 });
-
+NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 // Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

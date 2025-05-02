@@ -9,9 +9,10 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
     public void Configure(EntityTypeBuilder<Workspace> builder)
     {
         builder.HasKey(w => w.Id);
-        builder.Property(w => w.Id)
-            .ValueGeneratedNever();
-        builder.Property(w => w.Name)
+		builder.Property(d => d.Id)
+			.IsRequired()
+			.HasDefaultValueSql("gen_random_uuid()");
+		builder.Property(w => w.Name)
             .IsRequired()
             .HasMaxLength(100);
         builder.Property(w => w.Description)
@@ -31,5 +32,11 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
             .WithOne()
             .HasForeignKey(p => p.WorkspaceId)
             .OnDelete(DeleteBehavior.Cascade);
-    }
+
+		builder.Property(d => d.CreatedAt)
+			.HasDefaultValueSql("NOW()");
+
+		builder.Property(d => d.UpdatedAt)
+			.HasDefaultValueSql("NOW()");
+	}
 }

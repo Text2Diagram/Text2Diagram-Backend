@@ -13,9 +13,16 @@ namespace Text2Diagram_Backend.Data.Configurations
 		{
 			builder.HasKey(d => d.Id);
 			builder.Property(d => d.Id)
-				.ValueGeneratedNever();
+			.IsRequired()
+			.HasDefaultValueSql("gen_random_uuid()");
 			builder.Property(d => d.WorkspaceId)
 				.IsRequired();
+
+			builder.Property(d => d.CreatedAt)
+			.HasDefaultValueSql("NOW()");
+
+			builder.Property(d => d.UpdatedAt)
+				.HasDefaultValueSql("NOW()");
 
 		}
 	}

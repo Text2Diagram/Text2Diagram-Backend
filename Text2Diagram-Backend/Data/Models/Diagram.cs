@@ -2,7 +2,7 @@
 
 public class Diagram
 {
-    public Guid Id { get; private set; } = Guid.NewGuid();
+    public Guid Id { get; init; }
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; set; }
     public string DiagramData { get; set; } = string.Empty;

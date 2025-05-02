@@ -12,6 +12,7 @@ using Text2Diagram_Backend.Features.ERD.Components;
 using Microsoft.Extensions.Options;
 using Text2Diagram_Backend.Features.ERD;
 using Newtonsoft.Json.Serialization;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         ?? throw new InvalidOperationException("Connection string 'Database' not found.");
     options.UseNpgsql(connectionString);
 });
-
+NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 // Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

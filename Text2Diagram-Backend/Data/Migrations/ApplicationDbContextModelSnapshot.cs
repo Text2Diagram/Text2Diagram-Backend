@@ -86,7 +86,7 @@ namespace Text2Diagram_Backend.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<object>("Data")
+                    b.Property<string>("Data")
                         .IsRequired()
                         .HasColumnType("jsonb");
 

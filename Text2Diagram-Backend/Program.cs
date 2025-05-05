@@ -6,11 +6,9 @@ using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
-using Ollama;
 using Text2Diagram_Backend.Features.ERD;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
-using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.HttpHandlers;
 using Text2Diagram_Backend.Authentication;
 

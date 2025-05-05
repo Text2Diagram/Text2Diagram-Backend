@@ -83,6 +83,7 @@ public class ProjectsController : ControllerBase
         patchModel.ApplyTo(itemVm);
 
         _mapper.Map<ProjectVM, Project>(itemVm, editItem);
+        _dbContext.Entry(editItem).State = EntityState.Modified;
 
         await _dbContext.SaveChangesAsync();
         return Ok();

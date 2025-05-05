@@ -12,6 +12,7 @@ using Newtonsoft.Json.Serialization;
 using Npgsql;
 using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.HttpHandlers;
+using Text2Diagram_Backend.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +67,9 @@ builder.Services.AddSingleton(sp =>
 #pragma warning restore
     return kernel;
 });
+
+// Add Firebase Authentication
+builder.Services.AddSingleton<FirebaseTokenVerifier>();
 
 builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
 //builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();

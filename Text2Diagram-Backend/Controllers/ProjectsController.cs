@@ -4,9 +4,12 @@ using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Data;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Text2Diagram_Backend.Authentication;
+using System.Diagnostics;
 
 namespace Text2Diagram_Backend.Controllers;
 
+[FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
 public class ProjectsController : ControllerBase
@@ -23,9 +26,10 @@ public class ProjectsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(int page, int pageSize)
     {
+        var userId = User.GetUserId();
         page = page == 0 ? 1 : page;
         pageSize = pageSize == 0 ? 20 : pageSize;
-        var temp = await _dbContext.Projects.ToListAsync();
+        var temp = await _dbContext.Projects.Where(x => x.UserId == userId).OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt).ToListAsync();
         var data = temp.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var totalPage = (int)Math.Ceiling(temp.Count() * 1.0 / pageSize);
         return Ok(FormatData.FormatDataFunc(page, pageSize, totalPage, data));
@@ -58,8 +62,7 @@ public class ProjectsController : ControllerBase
             return NotFound("Không tồn tại dữ liệu");
 
         editItem.UpdatedAt = DateTime.UtcNow;
-        if (editItem == null)
-            return BadRequest("Không tồn tại dữ liệu");
+
         _mapper.Map<ProjectVM, Project>(item, editItem);
         await _dbContext.SaveChangesAsync();
         return NoContent();
@@ -72,9 +75,8 @@ public class ProjectsController : ControllerBase
         var editItem = await _dbContext.Projects.FirstOrDefaultAsync(x => x.Id == id);
         if (editItem == null)
             return NotFound("Không tồn tại dữ liệu.");
+
         editItem.UpdatedAt = DateTime.UtcNow;
-        if (editItem == null)
-            return BadRequest("Không tồn tại dữ liệu.");
 
         var itemVm = _mapper.Map<Project, ProjectVM>(editItem);
 

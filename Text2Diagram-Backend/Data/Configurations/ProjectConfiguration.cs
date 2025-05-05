@@ -19,9 +19,6 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(d => d.CreatedAt)
         .HasDefaultValueSql("NOW()");
 
-        builder.Property(d => d.UpdatedAt)
-            .HasDefaultValueSql("NOW()");
-
         builder.HasMany<Diagram>()
             .WithOne()
             .HasForeignKey(d => d.ProjectId)

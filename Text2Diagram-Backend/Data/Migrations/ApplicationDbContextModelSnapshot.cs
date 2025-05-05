@@ -8,7 +8,7 @@ using Text2Diagram_Backend.Data;
 
 #nullable disable
 
-namespace Text2Diagram_Backend.Data.Migrations
+namespace Text2Diagram_Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -99,9 +99,7 @@ namespace Text2Diagram_Backend.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserId")
                         .IsRequired()

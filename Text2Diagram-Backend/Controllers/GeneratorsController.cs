@@ -97,7 +97,7 @@ public class GeneratorsController : ControllerBase
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
         var result = await diagramGenerator.GenerateAsync(input);
-        return Ok(FormatData.FormatDataFunc(0, 0, 0, result));
+        return Ok(result);
     }
 
     [HttpPost("usecasespec")]

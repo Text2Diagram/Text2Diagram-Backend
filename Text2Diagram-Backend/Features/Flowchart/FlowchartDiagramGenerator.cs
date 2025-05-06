@@ -60,9 +60,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         // Generate node definitions
         foreach (var node in diagram.Nodes)
         {
-            string openingShape = GetNodeOpeningShape(node.Type);
-            string closingShape = GetNodeClosingShape(node.Type, node.Label);
-            mermaid.AppendLine($"    {node.Id}{openingShape}{closingShape}");
+            string nodeDef = GetNodeWrappedLabel(node.Id, node.Type, node.Label);
+            mermaid.AppendLine($"    {nodeDef}");
         }
 
         mermaid.AppendLine();
@@ -92,9 +91,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 // Add nodes in subflow
                 foreach (var node in subflow.Nodes)
                 {
-                    string openingShape = GetNodeOpeningShape(node.Type);
-                    string closingShape = GetNodeClosingShape(node.Type, node.Label);
-                    mermaid.AppendLine($"        {node.Id}{openingShape}{closingShape}");
+                    string nodeDef = GetNodeWrappedLabel(node.Id, node.Type, node.Label);
+                    mermaid.AppendLine($"        {nodeDef}");
                 }
 
                 // Add edges in subflow
@@ -151,78 +149,20 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 : word));
     }
 
-    /// <summary>
-    /// Gets the opening shape syntax for a specific node type in Mermaid using the modern @{shape} syntax.
-    /// </summary>
-    private string GetNodeOpeningShape(NodeType nodeType)
+    private string GetNodeWrappedLabel(string id, NodeType type, string label)
     {
-        return nodeType switch
+        string content = label.Replace("\"", "\\\""); // Escape quotes
+        return type switch
         {
-            // Terminal points
-            NodeType.Start => "@{shape: stadium, ",
-            NodeType.End => "@{shape: stadium, ",
-
-            // Basic nodes
-            NodeType.Process => "@{shape: rect, ",
-            NodeType.Decision => "@{shape: diam, ",
-
-            // Input/Output nodes
-            NodeType.Input => "@{shape: lean-r, ",
-            NodeType.Output => "@{shape: lean-l, ",
-            NodeType.Display => "@{shape: curv-trap, ",
-            NodeType.Document => "@{shape: doc, ",
-            NodeType.MultiDocument => "@{shape: docs, ",
-            NodeType.File => "@{shape: flag, ",
-
-            // Processing nodes
-            NodeType.Preparation => "@{shape: hex, ",
-            NodeType.ManualInput => "@{shape: sl-rect, ",
-            NodeType.ManualOperation => "@{shape: trap-t, ",
-            NodeType.PredefinedProcess => "@{shape: fr-rect, ",
-            NodeType.UserDefinedProcess => "@{shape: tag-rect, ",
-            NodeType.DividedProcess => "@{shape: div-rect, ",
-
-            // Storage nodes
-            NodeType.Database => "@{shape: cyl, ",
-            NodeType.DirectAccessStorage => "@{shape: h-cyl, ",
-            NodeType.DiskStorage => "@{shape: lin-cyl, ",
-            NodeType.StoredData => "@{shape: bow-rect, ",
-            NodeType.ExternalStorage => "@{shape: flip-tri, ",
-            NodeType.Internal => "@{shape: win-pane, ",
-
-            // Flow control
-            NodeType.Connector => "@{shape: sm-circ, ",
-            NodeType.OffPageConnector => "@{shape: tag-doc, ",
-            NodeType.Delay => "@{shape: delay, ",
-            NodeType.Loop => "@{shape: fork, ",
-            NodeType.LoopLimit => "@{shape: notch-pent, ",
-
-            // Junction nodes
-            NodeType.Merge => "@{shape: tri, ",
-            NodeType.Or => "@{shape: f-circ, ",
-            NodeType.SummingJunction => "@{shape: cross-circ, ",
-            NodeType.Sort => "@{shape: trap-b, ",
-            NodeType.Collate => "@{shape: hourglass, ",
-
-            // Annotation nodes
-            NodeType.Card => "@{shape: notch-rect, ",
-            NodeType.Comment => "@{shape: brace, ",
-            NodeType.CommentRight => "@{shape: brace-r, ",
-            NodeType.Comments => "@{shape: braces, ",
-            NodeType.ComLink => "@{shape: bolt, ",
-
-            // Default fallback
-            _ => "@{shape: rect, "
+            NodeType.Start or NodeType.End => $"{id}([{content}])",        // Rounded
+            NodeType.Process => $"{id}[{content}]",                          // Rectangle
+            NodeType.Subroutine => $"{id}[[{content}]]",                     // Double rectangle
+            NodeType.Decision => $"{id}{{{content}}}",                       // Diamond
+            NodeType.InputOutput or NodeType.Document => $"{id}[/\"{content}\"/]", // Parallelogram
+            NodeType.DataStore => $"{id}[(\"{content}\")]",                  // Cylinder
+            NodeType.Comment => $"{id}:::note[{content}]",                   // Note (optional style class)
+            _ => $"{id}[{content}]"                                          // Default to rectangle
         };
-    }
-
-    /// <summary>
-    /// Gets the closing shape syntax for modern @{shape} syntax.
-    /// For all node types using modern syntax, this is always "]".
-    /// </summary>
-    private string GetNodeClosingShape(NodeType nodeType, string nodeLabel)
-    {
-        return "label: \"" + nodeLabel + "\"}";
     }
 
     /// <summary>
@@ -232,36 +172,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         return edgeType switch
         {
-            // Basic connections
-            EdgeType.Normal => "-->",
-
-            // Line styles
-            EdgeType.Thick => "==>",
-            EdgeType.Dotted => "-.->",
-
-            // Semantic types
-            EdgeType.Success => "-->",
-            EdgeType.Failure => "-.->",
-            EdgeType.Conditional => "-->",
-            EdgeType.Return => "==>",
-
-            // Special connections
+            EdgeType.Arrow => "-->",
+            EdgeType.OpenArrow => "--o",
+            EdgeType.CrossArrow => "--x",
             EdgeType.NoArrow => "---",
-            EdgeType.OpenLink => "--o",
-            EdgeType.CrossLink => "--x",
-            EdgeType.CircleEnd => "---o",
-            EdgeType.CrossEnd => "---x",
-
-            // Combinations
-            EdgeType.DottedNoArrow => "-.-",
-            EdgeType.DottedOpenLink => "-.o",
-            EdgeType.DottedCrossLink => "-.x",
-
-            EdgeType.ThickNoArrow => "===",
-            EdgeType.ThickOpenLink => "==o",
-            EdgeType.ThickCrossLink => "==x",
-
-            // Default fallback
             _ => "-->"
         };
     }

@@ -1,4 +1,5 @@
-﻿using LangChain.Providers;
+
+using LangChain.Providers;
 using LangChain.Providers.Ollama;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
@@ -422,3 +423,4 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
     //    }
     //}
 }
+

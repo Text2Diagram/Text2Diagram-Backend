@@ -1,9 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.EntityFrameworkCore;
 using Text2Diagram_Backend.Data.Models;
-using System.Reflection.Emit;
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Text2Diagram_Backend.Data.Configurations;
 
@@ -19,8 +18,11 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(d => d.CreatedAt)
         .HasDefaultValueSql("NOW()");
 
-        builder.Property(d => d.UpdatedAt)
-            .HasDefaultValueSql("NOW()");
+        builder.Property(d => d.Data)
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonConvert.SerializeObject(v),
+                v => JsonConvert.DeserializeObject<Dictionary<string, JToken>>(v)!);
 
         builder.HasMany<Diagram>()
             .WithOne()

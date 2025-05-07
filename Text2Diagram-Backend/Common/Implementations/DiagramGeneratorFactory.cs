@@ -2,6 +2,7 @@ using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.ERD;
 using Text2Diagram_Backend.Features.Flowchart;
+using Text2Diagram_Backend.Features.UsecaseDiagram;
 
 namespace Text2Diagram_Backend.Common.Implementations;
 
@@ -11,7 +12,8 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
 
     public DiagramGeneratorFactory(
         FlowchartDiagramGenerator flowchartDiagramGenerator,
-        ERDiagramGenerator eRDiagramGenerator)
+        ERDiagramGenerator eRDiagramGenerator,
+        UsecaseDiagramGenerator usecaseDiagramGenerator)
     {
         generators = new Dictionary<DiagramType, IDiagramGenerator>
         {
@@ -21,7 +23,10 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
 
 			{
 				DiagramType.ER, eRDiagramGenerator
-			}
+			},
+            {
+                DiagramType.UseCase, usecaseDiagramGenerator
+            }
 		};
     }
 

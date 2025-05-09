@@ -1,20 +1,6 @@
-
-﻿using LangChain.Providers;
-using LangChain.Providers.Ollama;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Options;
-using System.Reflection.Emit;
-using System.Reflection.Metadata;
-using System.Runtime.Intrinsics.X86;
-using System;
 using System.Text;
-using System.Text.Json;
-using Text2Diagram_Backend.Abstractions;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
-using Text2Diagram_Backend.Data.Models;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -65,6 +51,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
 
         // Start PlantUML definition
         puml.AppendLine("@startuml");
+        puml.AppendLine("left to right direction");
 
         var useCasesInBoundaries = new HashSet<string>();
         if (diagram.Packages != null && diagram.Packages.Any())
@@ -73,20 +60,52 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
             {
                 // Use quotes for boundary names to handle spaces
                 puml.AppendLine($"package \"{(package.Name)}\" {{");
-                if (package.UseCases != null)
+                /*if (package.UseCases != null)
                 {
                     foreach (var useCase in package.UseCases)
                     {
                         puml.AppendLine($"  usecase \"{EscapePlantUmlString(useCase)}\"as {CreateAlias(useCase)}");//
                         useCasesInBoundaries.Add(useCase);
                     }
+                }*/
+
+                //Only need to define Association and Relationships
+
+                // Associations (Actor <--> UseCase)
+                if (package.Associations != null && package.Associations.Any())
+                {
+                    foreach (var assoc in package.Associations)
+                    {
+                        puml.AppendLine($"{EscapePlantUmlString(assoc.Actor)} --> ({assoc.UseCase})");
+                    }
+                    puml.AppendLine();
                 }
+
+                // Includes (Base ..> Included : <<include>>)
+                if (package.Includes != null && package.Includes.Any())
+                {
+                    foreach (var include in package.Includes)
+                    {
+                        puml.AppendLine($"({include.BaseUseCase}) ..> ({include.IncludedUseCase}) : <<include>>");
+                    }
+                    puml.AppendLine();
+                }
+
+                // Extends (Base <.. Extended : <<extend>>) - Note the direction
+                if (package.Extends != null && package.Extends.Any())
+                {
+                    foreach (var extend in package.Extends)
+                    {
+                        puml.AppendLine($"({extend.BaseUseCase} <.. ({extend.ExtendedUseCase}) : <<extend>>");
+                    }
+                    puml.AppendLine();
+                }
+                puml.AppendLine();
                 puml.AppendLine("}");
-                puml.AppendLine(); 
             }
         }
 
-        //Actors
+        /*//Actors
         if (diagram.Actors != null && diagram.Actors.Any())
         {
             foreach (var actor in diagram.Actors)
@@ -145,7 +164,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                 puml.AppendLine($"{CreateAlias(extend.BaseUseCase)} <.. {CreateAlias(extend.ExtendedUseCase)} : <<extend>>");
             }
             puml.AppendLine();
-        }
+        }*/
 
         puml.AppendLine("@enduml");
 

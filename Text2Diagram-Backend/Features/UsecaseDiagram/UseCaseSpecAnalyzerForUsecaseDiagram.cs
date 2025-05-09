@@ -1,6 +1,3 @@
-
-using LangChain.Providers;
-using LangChain.Providers.Ollama;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -101,11 +98,22 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             logger.LogWarning(" Raw response:\n{Content}", errorMessage);
         }
 
-        // Basic validation
-        if (jsonNode["Actors"] is not JsonArray || jsonNode["UseCases"] is not JsonArray)
-        {
-            errorMessage = "Missing 'Actors' or 'UseCases' array.";
+        var packages = jsonNode?["Packages"] as JsonArray;
+
+        if (packages == null) {
+            errorMessage = "Missing 'Packages' array.";
             logger.LogWarning(" Raw response:\n{Content}", errorMessage);
+        } else
+        {
+            foreach (var package in packages)
+            {
+                // Basic validation
+                if (package?["Actors"] is not JsonArray || package?["UseCases"] is not JsonArray)
+                {
+                    errorMessage = "Missing 'Actors' or 'UseCases' array.";
+                    logger.LogWarning(" Raw response:\n{Content}", errorMessage);
+                }
+            }
         }
 
         var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
@@ -232,7 +240,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             - Define Associations between Actors and the Use Cases they participate in.
             - Identify Include relationships where one Use Case's functionality is always included within another.
             - Identify Extend relationships where one Use Case optionally extends the behavior of another under certain conditions.
-            - Define System Packages to group related Use Cases logically.
+            - Define System Packages to group related all Actors, Use Cases, Associations, Include relationships, Extend relationships logically.
             - Return only the structured JSON object in the following format, wrapped in code fences:
 
             """
@@ -240,21 +248,20 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
            """
             ```json
             {
-              "Actors": [ "ACTOR_NAME_1", "ACTOR_NAME_2"],
-              "UseCases": ["USE_CASE_NAME_1", "USE_CASE_NAME_2"],
-              "Associations": [
-                { "Actor": "ACTOR_NAME", "UseCase": "USE_CASE_NAME" }
-              ],
-              "Includes": [
-                { "BaseUseCase": "BASE_USE_CASE_NAME", "IncludedUseCase": "INCLUDED_USE_CASE_NAME" }
-              ],
-              "Extends": [
-                { "BaseUseCase": "BASE_USE_CASE_NAME", "ExtendedUseCase": "EXTENDED_USE_CASE_NAME" }
-              ],
               "Packages": [
                 {
                   "Name": "BOUNDARY_NAME",
-                  "UseCases": ["USE_CASE_NAME_1", "USE_CASE_NAME_2"]
+                  "Actors": [{ "Name": "ACTOR_NAME_1", "Name": "ACTOR_NAME_2" }],
+                  "UseCases": [{ "Name": "USE_CASE_NAME_1", "Name": "USE_CASE_NAME_2" }],
+                  "Associations": [
+                    { "Actor": "ACTOR_NAME", "UseCase": "USE_CASE_NAME" }
+                  ],
+                  "Includes": [
+                    { "BaseUseCase": "BASE_USE_CASE_NAME", "IncludedUseCase": "INCLUDED_USE_CASE_NAME" }
+                  ],
+                  "Extends": [
+                    { "BaseUseCase": "BASE_USE_CASE_NAME", "ExtendedUseCase": "EXTENDED_USE_CASE_NAME" }
+                  ],
                 }
               ],
             }
@@ -266,10 +273,10 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             - Association: {{Actor: string, UseCase: string}} (Names must match defined Actors and UseCases)
             - Include: {{BaseUseCase: string, IncludedUseCase: string}} (Names must match defined UseCases)
             - Extend: {{BaseUseCase: string, ExtendedUseCase: string}} (Names must match defined UseCases)
-            - Package: {{Name: string, UseCases: List<string>}} (UseCase names must match defined UseCases)
+            - Package: {{Name: string, UseCases: List<UseCase>, Actors: List<Actor>, Associations: List<Association>, Includes: List<Include>, Extends: List<Extend>}} (UseCases, Actors, ... must match schemas above)
 
             ### REQUIREMENTS:
-            - Actor and Use Case names should be descriptive, typically starting with a capital letter and using spaces (e.g., "Process Payment", "Online Shopper").
+            - Actor and Use Case names should be descriptive, typically starting with a capital letter. If it's usecase, using spaces between each word (e.g., "Process Payment", "Add To Cart"), if it's actor, using underscores between each word (e.g., "Online_Shopper", "Restaurant_Receptionist").
             - Descriptions should be concise and clear.
             - All referenced names in Associations, Includes, Extends, and Boundaries must correspond exactly to names defined in the Actors or UseCases lists.
             - The diagram must contain at least one Actor and one Use Case if the description implies interaction. If the description is too vague for interaction, return empty lists for Actors and UseCases.
@@ -285,29 +292,28 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             OUTPUT:
             ```json
             {
-              "Actors": [
-                { "Name": "Customer" },
-                { "Name": "Administrator" }
-              ],
-              "UseCases": [
-                { "Name": "Search for Books"},
-                { "Name": "Place Order"},
-                { "Name": "Process Payment"},
-                { "Name": "Manage Inventory"}
-              ],
-              "Associations": [
-                { "Actor": "Customer", "UseCase": "Search for Books" },
-                { "Actor": "Customer", "UseCase": "Place Order" },
-                { "Actor": "Administrator", "UseCase": "Manage Inventory" }
-              ],
-              "Includes": [
-                 { "BaseUseCase": "Place Order", "IncludedUseCase": "Process Payment" }
-              ],
-              "Extends": [],
               "Packages": [
                 {
                   "Name": "Online Bookstore System",
-                  "UseCases": ["Search for Books", "Place Order", "Process Payment", "Manage Inventory"]
+                  "Actors": [
+                    { "Name": "Customer" },
+                    { "Name": "Administrator" }
+                  ],
+                  "UseCases": [
+                    { "Name": "Search for Books"},
+                    { "Name": "Place Order"},
+                    { "Name": "Process Payment"},
+                    { "Name": "Manage Inventory"}
+                  ],
+                  "Associations": [
+                    { "Actor": "Customer", "UseCase": "Search for Books" },
+                    { "Actor": "Customer", "UseCase": "Place Order" },
+                    { "Actor": "Administrator", "UseCase": "Manage Inventory" }
+                  ],
+                  "Includes": [
+                     { "BaseUseCase": "Place Order", "IncludedUseCase": "Process Payment" }
+                  ],
+                  "Extends": [],
                 }
               ],
             }

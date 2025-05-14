@@ -1,0 +1,13 @@
+﻿namespace Text2Diagram_Backend.Features.Sequence.Components;
+
+public class ParallelBlock : SequenceElement
+{
+	public string Title { get; set; } // optional, e.g., "Alice to Bob"
+	public List<ParallelBranch> Branches { get; set; } = new();
+}
+
+public class ParallelBranch
+{
+	public string Title { get; set; } // optional
+	public List<SequenceElement> Body { get; set; } = new();
+}

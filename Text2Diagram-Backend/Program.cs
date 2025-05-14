@@ -10,9 +10,8 @@ using Text2Diagram_Backend.Features.ERD;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
 using Text2Diagram_Backend.HttpHandlers;
-using Text2Diagram_Backend.Features.UsecaseDiagram;
 using Text2Diagram_Backend.Authentication;
-
+using Text2Diagram_Backend.Features.Sequence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,10 +79,11 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
-builder.Services.AddSingleton<UsecaseDiagramGenerator>();
+builder.Services.AddSingleton<SequenceDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<AnalyzerForER>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
+builder.Services.AddSingleton<AnalyzerForSequence>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

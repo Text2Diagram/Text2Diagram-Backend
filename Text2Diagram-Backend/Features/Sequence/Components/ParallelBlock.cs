@@ -2,12 +2,6 @@
 
 public class ParallelBlock : SequenceElement
 {
-	public string Title { get; set; } // optional, e.g., "Alice to Bob"
-	public List<ParallelBranch> Branches { get; set; } = new();
-}
-
-public class ParallelBranch : SequenceElement
-{
-	public string Title { get; set; } // optional
-	public List<SequenceElement> Body { get; set; } = new();
+    public string Title { get; set; } = string.Empty; // optional, e.g., "Alice to Bob"
+    public List<ParallelBranch> Branches { get; set; } = new();
 }

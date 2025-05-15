@@ -1,13 +1,11 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using System.Linq;
-using System.Text.Json;
+using Newtonsoft.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Text2Diagram_Backend.Common.Abstractions;
-using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.Features.Sequence.Components;
+using Newtonsoft.Json.Converters;
+using System.Text.Json;
 
 namespace Text2Diagram_Backend.Features.Sequence;
 
@@ -86,16 +84,24 @@ public class AnalyzerForSequence
 					if (element == null)
 						continue;
 
+					// Xử lý Statement (basic message)
 					if (element["Participant1"] != null && element["Participant2"] != null)
 					{
-						if (string.IsNullOrWhiteSpace(element["Message"]?.ToString()) || string.IsNullOrWhiteSpace(element["ArrowType"]?.ToString()))
+						if (string.IsNullOrWhiteSpace(element["Message"]?.ToString()) ||
+							string.IsNullOrWhiteSpace(element["ArrowType"]?.ToString()))
 						{
 							errorMessage = "A basic message element is missing required fields: Message or ArrowType.";
 							logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
 							goto ContinueAttempt;
 						}
+
+						// Thêm $type
+						element["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.Statement, Text2Diagram-Backend";
+						continue;
 					}
-					else if (element["AltBlock"] != null)
+
+					// Xử lý AltBlock
+					if (element["AltBlock"] != null)
 					{
 						var branches = element["AltBlock"]?["Branches"]?.AsArray();
 						if (branches == null || branches.Count == 0)
@@ -128,24 +134,139 @@ public class AnalyzerForSequence
 									logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
 									goto ContinueAttempt;
 								}
+
+								// Gán $type cho message trong AltBlock
+								msg["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.Statement, Text2Diagram-Backend";
 							}
+							branch["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.AltBranch, Text2Diagram-Backend";
 						}
+
+						// Gán $type cho chính AltBlock
+						element["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.AltBlock, Text2Diagram-Backend";
+						continue;
 					}
-					else
+
+					// Xử lý LoopBlock
+					if (element["LoopBlock"] != null)
 					{
-						errorMessage = "Element is neither a message nor an AltBlock.";
-						logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
-						goto ContinueAttempt;
+						var body = element["LoopBlock"]?["Body"]?.AsArray();
+						if (body == null || body.Count == 0)
+						{
+							errorMessage = "LoopBlock missing or empty 'Body'.";
+							logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+							goto ContinueAttempt;
+						}
+
+						foreach (var msg in body)
+						{
+							if (string.IsNullOrWhiteSpace(msg["Participant1"]?.ToString()) ||
+								string.IsNullOrWhiteSpace(msg["Participant2"]?.ToString()) ||
+								string.IsNullOrWhiteSpace(msg["Message"]?.ToString()) ||
+								string.IsNullOrWhiteSpace(msg["ArrowType"]?.ToString()))
+							{
+								errorMessage = "Message inside LoopBlock body missing required fields.";
+								logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+								goto ContinueAttempt;
+							}
+
+							msg["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.Statement, Text2Diagram-Backend";
+						}
+
+						element["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.LoopBlock, Text2Diagram-Backend";
+						continue;
 					}
+
+					// Xử lý CriticalBlock
+					if (element["CriticalBlock"] != null)
+					{
+						var body = element["CriticalBlock"]?["Body"]?.AsArray();
+						if (body == null || body.Count == 0)
+						{
+							errorMessage = "CriticalBlock missing or empty 'Body'.";
+							logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+							goto ContinueAttempt;
+						}
+
+						foreach (var msg in body)
+						{
+							if (string.IsNullOrWhiteSpace(msg["Participant1"]?.ToString()) ||
+								string.IsNullOrWhiteSpace(msg["Participant2"]?.ToString()) ||
+								string.IsNullOrWhiteSpace(msg["Message"]?.ToString()) ||
+								string.IsNullOrWhiteSpace(msg["ArrowType"]?.ToString()))
+							{
+								errorMessage = "Message inside CriticalBlock body missing required fields.";
+								logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+								goto ContinueAttempt;
+							}
+
+							msg["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.Statement, Text2Diagram-Backend";
+						}
+
+						element["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.CriticalBlock, Text2Diagram-Backend";
+						continue;
+					}
+
+					// Xử lý ParallelBlock
+					if (element["ParallelBlock"] != null)
+					{
+						var branches = element["ParallelBlock"]?["Branches"]?.AsArray();
+						if (branches == null || branches.Count == 0)
+						{
+							errorMessage = "ParallelBlock missing or empty 'Branches'.";
+							logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+							goto ContinueAttempt;
+						}
+
+						foreach (var branch in branches)
+						{
+							var body = branch["Body"]?.AsArray();
+							if (body == null || body.Count == 0)
+							{
+								errorMessage = "Parallel branch missing 'Body'.";
+								logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+								goto ContinueAttempt;
+							}
+
+							foreach (var msg in body)
+							{
+								if (string.IsNullOrWhiteSpace(msg["Participant1"]?.ToString()) ||
+									string.IsNullOrWhiteSpace(msg["Participant2"]?.ToString()) ||
+									string.IsNullOrWhiteSpace(msg["Message"]?.ToString()) ||
+									string.IsNullOrWhiteSpace(msg["ArrowType"]?.ToString()))
+								{
+									errorMessage = "Message inside ParallelBlock branch body missing required fields.";
+									logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+									goto ContinueAttempt;
+								}
+
+								msg["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.Statement, Text2Diagram-Backend";
+							}
+							branch["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.ParallelBranch, Text2Diagram-Backend";
+						}
+
+						element["$type"] = "Text2Diagram_Backend.Features.Sequence.Components.ParallelBlock, Text2Diagram-Backend";
+						continue;
+					}
+
+					// Nếu không khớp kiểu nào
+					errorMessage = "Element is of unknown or unsupported structure.";
+					logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);
+					goto ContinueAttempt;
 				}
 
-				var diagram = JsonSerializer.Deserialize<SequenceDiagram>(
-					jsonResult,
-					new JsonSerializerOptions
+				var updatedJson = jsonNode.ToJsonString(new JsonSerializerOptions
+				{
+					WriteIndented = false
+				});
+
+
+				var diagram = JsonConvert.DeserializeObject<SequenceDiagram>(
+					updatedJson,
+					new JsonSerializerSettings
 					{
-						PropertyNameCaseInsensitive = true,
-						AllowTrailingCommas = true,
-						Converters = { new JsonStringEnumConverter() }
+						TypeNameHandling = TypeNameHandling.Auto, // Đọc $type cho các kiểu kế thừa
+						MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
+						Converters = new List<JsonConverter> { new StringEnumConverter() }
 					}
 				);
 
@@ -162,7 +283,7 @@ public class AnalyzerForSequence
 			ContinueAttempt:
 				continue;
 			}
-			catch (JsonException ex)
+			catch (Newtonsoft.Json.JsonException ex)
 			{
 				errorMessage = $"JSON parsing error: {ex.Message}";
 				logger.LogWarning("Attempt {attempt}: {error}", attempt, errorMessage);

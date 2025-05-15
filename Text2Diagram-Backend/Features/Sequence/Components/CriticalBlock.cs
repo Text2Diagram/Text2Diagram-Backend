@@ -6,7 +6,7 @@ public class CriticalBlock : SequenceElement
 	public List<OptionBlock> Options { get; set; } = new();
 }
 
-public class OptionBlock
+public class OptionBlock : SequenceElement
 {
 	public string Condition { get; set; } // e.g. "Network timeout"
 	public List<SequenceElement> Body { get; set; } = new();

@@ -58,7 +58,7 @@ public class SequenceDiagramGenerator : IDiagramGenerator
 				{
 					case Statement statement:
 						string from = statement.Participant1?.Trim();
-						string to = statement.Participant2?.Trim();
+						string to = statement.Participant2?.Trim();						
 						string message = statement.Message?.Trim();
 						string arrow = string.IsNullOrEmpty(statement.ArrowType) ? "->>" : statement.ArrowType;
 
@@ -101,17 +101,20 @@ public class SequenceDiagramGenerator : IDiagramGenerator
 
 	private void AppendAltBlock(StringBuilder sb, AltBlock altBlock)
 	{
-		sb.AppendLine("    alt " + altBlock.Branches.FirstOrDefault()?.Condition ?? "condition");
-		foreach (var branch in altBlock.Branches)
+		if(altBlock.Branches.Count > 0)
 		{
-			if (branch != altBlock.Branches.First()) sb.AppendLine("    else " + branch.Condition);
-			foreach (var inner in branch.Body)
+			sb.AppendLine("    alt " + altBlock.Branches.FirstOrDefault()?.Condition ?? "condition");
+			foreach (var branch in altBlock.Branches)
 			{
-				var innerDiagram = new SequenceDiagram { Elements = new List<SequenceElement> { inner } };
-				sb.Append(GenerateMermaidCode(innerDiagram));
+				if (branch != altBlock.Branches.First()) sb.AppendLine("    else " + branch.Condition);
+				foreach (var inner in branch.Body)
+				{
+					var innerDiagram = new SequenceDiagram { Elements = new List<SequenceElement> { inner } };
+					sb.Append(GenerateMermaidCode(innerDiagram));
+				}
 			}
+			sb.AppendLine("    end");
 		}
-		sb.AppendLine("    end");
 	}
 
 	private void AppendLoopBlock(StringBuilder sb, LoopBlock loopBlock)

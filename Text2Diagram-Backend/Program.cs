@@ -12,6 +12,7 @@ using Npgsql;
 using Text2Diagram_Backend.HttpHandlers;
 using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Features.Sequence;
+using Text2Diagram_Backend.Features.UsecaseDiagram;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,10 +81,13 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
 builder.Services.AddSingleton<SequenceDiagramGenerator>();
+builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<AnalyzerForER>();
 builder.Services.AddSingleton<AnalyzerForSequence>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

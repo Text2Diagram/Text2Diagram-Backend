@@ -6,7 +6,7 @@ public class ParallelBlock : SequenceElement
 	public List<ParallelBranch> Branches { get; set; } = new();
 }
 
-public class ParallelBranch
+public class ParallelBranch : SequenceElement
 {
 	public string Title { get; set; } // optional
 	public List<SequenceElement> Body { get; set; } = new();

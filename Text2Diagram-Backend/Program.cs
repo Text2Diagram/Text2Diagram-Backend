@@ -32,7 +32,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         ?? throw new InvalidOperationException("Connection string 'Database' not found.");
     options.UseNpgsql(connectionString);
 });
-NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
+
 // Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -47,9 +47,9 @@ builder.Services.AddSingleton(sp =>
     var togetherAIModelId = builder.Configuration["TogetherAI:ModelId"] ?? throw new InvalidOperationException("TogetherAI:ModelId was not defined.");
     var togetherAIEndpoint = "https://api.together.xyz/v1";
 
-    var unifyAIApiKey = builder.Configuration["UnifyAI:ApiKey"] ?? throw new InvalidOperationException("UnifyAI:ApiKey was not defined.");
-    var unifyAIModelId = builder.Configuration["UnifyAI:ModelId"] ?? throw new InvalidOperationException("UnifyAI:ModelId was not defined.");
-    var unifyAIEndpoint = "https://api.unify.ai/v0";
+    //var unifyAIApiKey = builder.Configuration["UnifyAI:ApiKey"] ?? throw new InvalidOperationException("UnifyAI:ApiKey was not defined.");
+    //var unifyAIModelId = builder.Configuration["UnifyAI:ModelId"] ?? throw new InvalidOperationException("UnifyAI:ModelId was not defined.");
+    //var unifyAIEndpoint = "https://api.unify.ai/v0";
     var httpClient = new HttpClient
     {
         BaseAddress = new Uri(togetherAIEndpoint),
@@ -81,11 +81,11 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
 builder.Services.AddSingleton<SequenceDiagramGenerator>();
-builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<AnalyzerForER>();
 builder.Services.AddSingleton<AnalyzerForSequence>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
 
 

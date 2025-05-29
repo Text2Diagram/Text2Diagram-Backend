@@ -96,7 +96,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                 {
                     foreach (var extend in package.Extends)
                     {
-                        puml.AppendLine($"({extend.BaseUseCase} <.. ({extend.ExtendedUseCase}) : <<extend>>");
+                        puml.AppendLine($"({extend.BaseUseCase}) <.. ({extend.ExtendedUseCase}) : <<extend>>");
                     }
                     puml.AppendLine();
                 }

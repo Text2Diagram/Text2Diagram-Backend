@@ -1,6 +1,7 @@
 ﻿namespace Text2Diagram_Backend.Features.Sequence.Components;
-public class LoopBlock : SequenceElement
+
+public class AltBranch : SequenceElement
 {
-    public string Title { get; set; } = string.Empty; // Ví dụ: "Every minute"
+    public string Condition { get; set; } = string.Empty; // "is sick", "is well"
     public List<SequenceElement> Body { get; set; } = new();
 }

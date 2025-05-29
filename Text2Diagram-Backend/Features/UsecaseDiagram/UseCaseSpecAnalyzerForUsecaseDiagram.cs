@@ -1,13 +1,9 @@
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using Text2Diagram_Backend.Common.Abstractions;
-using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
-using Microsoft.Extensions.AI;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -100,10 +96,12 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
 
         var packages = jsonNode?["Packages"] as JsonArray;
 
-        if (packages == null) {
+        if (packages == null)
+        {
             errorMessage = "Missing 'Packages' array.";
             logger.LogWarning(" Raw response:\n{Content}", errorMessage);
-        } else
+        }
+        else
         {
             foreach (var package in packages)
             {
@@ -221,7 +219,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
         //throw new FormatException($"Failed to parse UseCase diagram after {MaxRetries} attempts.");
     }
 
-    
+
 
     private string GetAnalysisPrompt(string useCaseSpec, string? errorMessage = null)
     {

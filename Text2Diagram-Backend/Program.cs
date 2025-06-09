@@ -88,6 +88,8 @@ builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
 
+builder.Services.AddSingleton<TerminalNodesExtractor>();
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

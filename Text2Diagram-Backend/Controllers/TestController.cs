@@ -5,17 +5,17 @@ namespace Text2Diagram_Backend.Controllers;
 
 public class TestController : Controller
 {
-    private readonly UseCaseSpecGenerator useCaseSpecGenerator;
+    private readonly TerminalNodesExtractor _terminalNodesExtractor;
 
-    public TestController(UseCaseSpecGenerator useCaseSpecGenerator)
+    public TestController(TerminalNodesExtractor terminalNodesExtractor)
     {
-        this.useCaseSpecGenerator = useCaseSpecGenerator;
+        _terminalNodesExtractor = terminalNodesExtractor;
     }
 
     [HttpPost("test")]
     public async Task<IActionResult> Test(string input)
     {
-        var output = await useCaseSpecGenerator.GenerateUseCaseSpecAsync(input);
+        var output = await _terminalNodesExtractor.ExtractTerminalNodesAsync(input);
         return Ok(output);
     }
 }

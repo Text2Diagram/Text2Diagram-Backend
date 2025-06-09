@@ -5,17 +5,17 @@ namespace Text2Diagram_Backend.Controllers;
 
 public class TestController : Controller
 {
-    private readonly TerminalNodesExtractor _terminalNodesExtractor;
+    private readonly BasicFlowExtractor _basicFlowExtractor;
 
-    public TestController(TerminalNodesExtractor terminalNodesExtractor)
+    public TestController(BasicFlowExtractor basicFlowExtractor)
     {
-        _terminalNodesExtractor = terminalNodesExtractor;
+        _basicFlowExtractor = basicFlowExtractor;
     }
 
     [HttpPost("test")]
     public async Task<IActionResult> Test(string input)
     {
-        var output = await _terminalNodesExtractor.ExtractTerminalNodesAsync(input);
+        var output = await _basicFlowExtractor.ExtractBasicFlowAsync(input);
         return Ok(output);
     }
 }

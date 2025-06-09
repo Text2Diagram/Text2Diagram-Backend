@@ -1,4 +1,4 @@
-﻿namespace Text2Diagram_Backend.Features.Flowchart;
+﻿namespace Text2Diagram_Backend.Features.Flowchart.Components;
 
 /// <summary>
 /// Node types for flowchart diagrams using the modern @{shape} syntax from Mermaid v11.3.0+.

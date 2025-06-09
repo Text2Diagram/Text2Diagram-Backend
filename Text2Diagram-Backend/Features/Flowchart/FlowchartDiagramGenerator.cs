@@ -1,5 +1,6 @@
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart;
 
@@ -58,7 +59,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         mermaid.AppendLine("graph TD");
 
         // Generate node definitions
-        foreach (var node in diagram.Nodes)
+        foreach (var node in diagram.BasicFlow.Nodes)
         {
             string nodeDef = GetNodeWrappedLabel(node.Id, node.Type, node.Label);
             mermaid.AppendLine($"    {nodeDef}");
@@ -67,7 +68,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         mermaid.AppendLine();
 
         // Generate edge definitions
-        foreach (var edge in diagram.Edges.Where(e => !IsDuplicateEdge(e, diagram.Subflows)))
+        foreach (var edge in diagram.BasicFlow.Edges.Where(e => !IsDuplicateEdge(e, diagram.SubFlows)))
         {
             string connector = GetEdgeConnector(edge.Type);
             if (!string.IsNullOrEmpty(edge.Label))
@@ -81,12 +82,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
 
         // Generate subgraphs
-        if (diagram.Subflows != null && diagram.Subflows.Any())
+        if (diagram.SubFlows != null && diagram.SubFlows.Any())
         {
-            foreach (var subflow in diagram.Subflows)
+            foreach (var subflow in diagram.SubFlows)
             {
                 mermaid.AppendLine();
-                mermaid.AppendLine($"    subgraph {subflow.Name}[\"{FormatSubflowName(subflow.Name)}\"]");
+                mermaid.AppendLine($"    subgraph {subflow.Name}[\"{FormatSubFlowName(subflow.Name)}\"]");
 
                 // Add nodes in subflow
                 foreach (var node in subflow.Nodes)
@@ -120,7 +121,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     /// <summary>
     /// Checks if an edge is already represented in a subflow to avoid duplication.
     /// </summary>
-    private bool IsDuplicateEdge(FlowEdge edge, List<Subflow> subflows)
+    private bool IsDuplicateEdge(FlowEdge edge, List<SubFlow> subflows)
     {
         if (subflows == null || !subflows.Any())
             return false;
@@ -133,7 +134,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     /// <summary>
     /// Formats a subflow name for display, converting underscores to spaces and capitalizing words.
     /// </summary>
-    private string FormatSubflowName(string name)
+    private string FormatSubFlowName(string name)
     {
         if (string.IsNullOrEmpty(name))
             return name;

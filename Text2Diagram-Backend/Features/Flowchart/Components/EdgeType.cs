@@ -1,4 +1,4 @@
-﻿namespace Text2Diagram_Backend.Features.Flowchart;
+﻿namespace Text2Diagram_Backend.Features.Flowchart.Components;
 
 /// <summary>
 /// Types of edges (connections) between nodes in a flowchart.

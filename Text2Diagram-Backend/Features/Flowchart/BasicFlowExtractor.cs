@@ -1,8 +1,7 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Text.Json;
-using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
+using Text2Diagram_Backend.Common.Utils;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart;
@@ -91,9 +90,9 @@ public class BasicFlowExtractor
         var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
         var textContent = response.Content ?? string.Empty;
 
-        var validNodeTypes = NodeType.GetNames(typeof(NodeType)).ToList();
+        
 
-        var nodes = ExtractNodes(textContent, validNodeTypes);
+        var nodes = Helpers.Flowchart.ExtractNodes(textContent);
 
         if (!nodes.Any(n => n.Type == NodeType.Start))
         {
@@ -164,114 +163,13 @@ public class BasicFlowExtractor
         var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
         var textContent = response.Content ?? string.Empty;
 
-        var validEdgeTypes = EdgeType.GetNames(typeof(EdgeType)).ToList();
 
-        var edges = ExtractEdges(textContent, validEdgeTypes);
+        var edges = Helpers.Flowchart.ExtractEdges(textContent);
 
         return edges;
     }
 
-    private JsonNode ValidateJson(string content)
-    {
-        string jsonResult = string.Empty;
-        var codeFenceMatch = Regex.Match(content, @"```json\s*(.*?)\s*```", RegexOptions.Singleline);
-        if (codeFenceMatch.Success)
-        {
-            jsonResult = codeFenceMatch.Groups[1].Value.Trim();
-        }
-        else
-        {
-            _logger.LogError("No valid JSON found in the response.");
-            throw new InvalidOperationException("No valid JSON found in the response.");
-        }
+    
 
-        var jsonNode = JsonNode.Parse(jsonResult);
-        if (jsonNode == null)
-        {
-            throw new InvalidOperationException("Failed to parse JSON response from the model.");
-        }
-
-
-        return jsonNode;
-
-    }
-
-    private List<FlowNode> ExtractNodes(string input, List<string> validNodeTypes)
-    {
-        var jsonNode = ValidateJson(input);
-
-        if (jsonNode is not JsonArray jsonArray)
-        {
-            _logger.LogError("JSON response is not an array.");
-            throw new InvalidOperationException("JSON response is not an array.");
-        }
-
-        var nodes = new List<FlowNode>();
-        foreach (var node in jsonArray)
-        {
-            if (node == null) continue;
-
-            var id = node["Id"]?.ToString();
-            var label = node["Label"]?.ToString();
-            var type = node["Type"]?.ToString();
-
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(label) || string.IsNullOrEmpty(type))
-            {
-                _logger.LogWarning("Invalid node data: Id, Label, or Type is missing or empty.");
-                continue;
-            }
-
-            if (validNodeTypes.Contains(type))
-            {
-                nodes.Add(new FlowNode()
-                {
-                    Id = id,
-                    Label = label,
-                    Type = Enum.Parse<NodeType>(type)
-                });
-            }
-        }
-
-        return nodes;
-    }
-
-    private List<FlowEdge> ExtractEdges(string input, List<string> validNodeTypes)
-    {
-        var jsonNode = ValidateJson(input);
-        if (jsonNode is not JsonArray jsonArray)
-        {
-            _logger.LogError("JSON response is not an array.");
-            throw new InvalidOperationException("JSON response is not an array.");
-        }
-        var edges = new List<FlowEdge>();
-        foreach (var edge in jsonArray)
-        {
-            if (edge == null) continue;
-            var sourceId = edge["SourceId"]?.ToString();
-            var targetId = edge["TargetId"]?.ToString();
-            var type = edge["Type"]?.ToString();
-            var label = edge["Label"]?.ToString();
-            if (string.IsNullOrEmpty(sourceId) || string.IsNullOrEmpty(targetId) || string.IsNullOrEmpty(type))
-            {
-                _logger.LogWarning("Invalid edge data: SourceId, TargetId, or Type is missing or empty.");
-                continue;
-            }
-
-
-            if (!validNodeTypes.Contains(type))
-            {
-                _logger.LogWarning("Invalid edge type: {Type}. Valid types are: {ValidTypes}.", type, string.Join(", ", validNodeTypes));
-                continue;
-            }
-
-            edges.Add(new FlowEdge()
-            {
-                SourceId = sourceId,
-                TargetId = targetId,
-                Type = Enum.Parse<EdgeType>(type),
-                Label = label
-            });
-        }
-        return edges;
-    }
+    
 }

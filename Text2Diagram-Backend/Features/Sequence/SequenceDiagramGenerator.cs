@@ -1,9 +1,6 @@
-<<<<<<< HEAD
-﻿using Newtonsoft.Json;
+
+using Newtonsoft.Json;
 using System.Text;
-=======
-﻿using System.Text;
->>>>>>> a44999a6fa511ac2d1789764f2a634bd91c568c5
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Sequence.Components;
 
@@ -30,18 +27,15 @@ public class SequenceDiagramGenerator : IDiagramGenerator
             // Extract and generate diagram structure directly from input
             var diagram = await analyzer.AnalyzeAsync(input);
 
-<<<<<<< HEAD
             logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", diagram);
 
             return JsonConvert.SerializeObject(diagram);
-=======
-            // Generate Mermaid syntax
-            string mermaidCode = GenerateMermaidCode(diagram, false);
+            //// Generate Mermaid syntax
+            //string mermaidCode = GenerateMermaidCode(diagram, false);
 
-            logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
+            //logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
 
-            return mermaidCode;
->>>>>>> a44999a6fa511ac2d1789764f2a634bd91c568c5
+            //return mermaidCode;
         }
         catch (Exception ex)
         {

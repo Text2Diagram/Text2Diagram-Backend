@@ -1,10 +1,7 @@
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Features.Flowchart.Agents;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart;
@@ -15,11 +12,21 @@ namespace Text2Diagram_Backend.Features.Flowchart;
 /// </summary>
 public class UseCaseSpecAnalyzerForFlowchart
 {
+    private readonly FlowCategorizer _flowCategorizer;
     private readonly BasicFlowExtractor _basicFlowExtractor;
+    private readonly AlternativeFlowExtractor _alternativeFlowExtractor;
+    private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> _logger;
 
-    public UseCaseSpecAnalyzerForFlowchart(BasicFlowExtractor basicFlowExtractor)
+    public UseCaseSpecAnalyzerForFlowchart(
+        FlowCategorizer flowCategorizer,
+        BasicFlowExtractor basicFlowExtractor,
+        AlternativeFlowExtractor alternativeFlowExtractor,
+        ILogger<UseCaseSpecAnalyzerForFlowchart> logger)
     {
+        _flowCategorizer = flowCategorizer;
         _basicFlowExtractor = basicFlowExtractor;
+        _alternativeFlowExtractor = alternativeFlowExtractor;
+        _logger = logger;
     }
 
     /// <summary>
@@ -31,10 +38,36 @@ public class UseCaseSpecAnalyzerForFlowchart
     /// <exception cref="FormatException">Thrown when analysis fails to extract valid diagram elements.</exception>
     public async Task<FlowchartDiagram> AnalyzeAsync(string useCaseSpec)
     {
-        var basicFlowDescription = useCaseSpec;
+        var (basicFlowDescription, alternativeFlowsDescription, exceptionFlowsDescription) = await _flowCategorizer.CategorizeFlowsAsync(useCaseSpec);
 
+        //var flowExtractTasks = new List<Task<Flow>>();
+        //flowExtractTasks.Add(_basicFlowExtractor.ExtractBasicFlowAsync(basicFlowDescription));
+        //foreach (var alternativeFlowDescription in alternativeFlowsDescription)
+        //{
+        //    flowExtractTasks.Add(_alternativeFlowExtractor.ExtractAlternativeFlowAsync(alternativeFlowDescription.Description, alternativeFlowDescription.Name));
+        //}
+
+        //var result = await Task.WhenAll(flowExtractTasks);
+        //var basicFlow = result.First(f => string.IsNullOrEmpty(f.Name));
+        //var others = result.Where(f => !string.IsNullOrEmpty(f.Name)).ToList();
+        await Task.Delay(1000 * 60);
         var basicFlow = await _basicFlowExtractor.ExtractBasicFlowAsync(basicFlowDescription);
-        return new FlowchartDiagram(basicFlow, new List<SubFlow>());
-    }
+        await Task.Delay(1000 * 60);
+        var others = new List<Flow>();
+        foreach (var alternativeFlowDescription in alternativeFlowsDescription)
+        {
+            await Task.Delay(1000 * 60);
+            others.Add(await _alternativeFlowExtractor.ExtractAlternativeFlowAsync(alternativeFlowDescription.Description, alternativeFlowDescription.Name));
+        }
 
+        _logger.LogInformation("Basic flow: {basicFlow}", JsonSerializer.Serialize(basicFlow));
+
+        foreach (var flow in others)
+        {
+
+            _logger.LogInformation("Sub flow {subFlowName}: {subFlow}", flow.Name, JsonSerializer.Serialize(flow));
+        }
+
+        return new FlowchartDiagram(basicFlow, others);
+    }
 }

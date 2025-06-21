@@ -13,6 +13,7 @@ using Text2Diagram_Backend.HttpHandlers;
 using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Features.Sequence;
 using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.Features.Flowchart.Agents;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +90,8 @@ builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
 
 builder.Services.AddSingleton<BasicFlowExtractor>();
+builder.Services.AddSingleton<AlternativeFlowExtractor>();
+builder.Services.AddSingleton<FlowCategorizer>();
 
 
 builder.Services.AddEndpointsApiExplorer();

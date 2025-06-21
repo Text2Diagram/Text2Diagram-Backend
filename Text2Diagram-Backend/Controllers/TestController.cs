@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Text2Diagram_Backend.Features.Flowchart;
+using Text2Diagram_Backend.Features.Flowchart.Agents;
 
 namespace Text2Diagram_Backend.Controllers;
 

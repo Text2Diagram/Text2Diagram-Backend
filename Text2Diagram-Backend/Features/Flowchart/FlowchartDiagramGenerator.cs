@@ -121,7 +121,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     /// <summary>
     /// Checks if an edge is already represented in a subflow to avoid duplication.
     /// </summary>
-    private bool IsDuplicateEdge(FlowEdge edge, List<SubFlow> subflows)
+    private bool IsDuplicateEdge(FlowEdge edge, List<Flow> subflows)
     {
         if (subflows == null || !subflows.Any())
             return false;

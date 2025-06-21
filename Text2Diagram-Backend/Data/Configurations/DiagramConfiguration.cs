@@ -11,7 +11,8 @@ public class DiagramConfiguration : IEntityTypeConfiguration<Diagram>
     {
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id)
-            .ValueGeneratedNever();
+            .IsRequired()
+            .HasDefaultValueSql("gen_random_uuid()");
         builder.Property(d => d.Title).IsRequired().HasMaxLength(100);
         builder.Property(d => d.Description).HasMaxLength(1000);
 
@@ -28,10 +29,14 @@ public class DiagramConfiguration : IEntityTypeConfiguration<Diagram>
                 v => (DiagramType)Enum.Parse(typeof(DiagramType), v)
             ));
 
+        builder.Property(d => d.DiagramJson)
+            .IsRequired()
+            .HasColumnType("jsonb");
 
-        builder.HasMany(d => d.Shares)
-            .WithOne()
-            .HasForeignKey(s => s.DiagramId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.Property(d => d.CreatedAt)
+            .HasDefaultValueSql("NOW()");
+
+        builder.Property(d => d.UpdatedAt)
+            .HasDefaultValueSql("NOW()");
     }
 }

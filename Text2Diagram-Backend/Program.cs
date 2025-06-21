@@ -1,24 +1,31 @@
-using LangChain.Providers.Ollama;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Text2Diagram_Backend;
-using Text2Diagram_Backend.Common;
+using Microsoft.SemanticKernel;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
-using Text2Diagram_Backend.Flowchart;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
+using Text2Diagram_Backend.Features.ERD;
+using Newtonsoft.Json.Serialization;
+using Npgsql;
+using Text2Diagram_Backend.HttpHandlers;
+using Text2Diagram_Backend.Authentication;
+using Text2Diagram_Backend.Features.Sequence;
+using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.LLMGeminiService;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+//builder.WebHost.UseUrls("https://0.0.0.0:5000");
 
 // Add services to the container.
 //builder.Services.AddHostedService<NodeServerBackgroundService>();
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -33,35 +40,66 @@ builder.Services.AddProblemDetails();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Configure Ollama
-builder.Services.AddSingleton<OllamaProvider>();
-builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
-builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
+var llmId = builder.Configuration["Ollama:LLM"] ?? throw new InvalidOperationException("LLM was not defined.");
+var ollamaEndpoint = builder.Configuration["Ollama:Endpoint"] ?? throw new InvalidOperationException("Ollama endpoint was not defined.");
+builder.Services.AddSingleton(sp =>
+{
+    var togetherAIApiKey = builder.Configuration["TogetherAI:ApiKey"] ?? throw new InvalidOperationException("TogetherAI:ApiKey was not defined.");
+    var togetherAIModelId = builder.Configuration["TogetherAI:ModelId"] ?? throw new InvalidOperationException("TogetherAI:ModelId was not defined.");
+    var togetherAIEndpoint = "https://api.together.xyz/v1";
 
+    //var unifyAIApiKey = builder.Configuration["UnifyAI:ApiKey"] ?? throw new InvalidOperationException("UnifyAI:ApiKey was not defined.");
+    //var unifyAIModelId = builder.Configuration["UnifyAI:ModelId"] ?? throw new InvalidOperationException("UnifyAI:ModelId was not defined.");
+    //var unifyAIEndpoint = "https://api.unify.ai/v0";
+    var httpClient = new HttpClient
+    {
+        BaseAddress = new Uri(togetherAIEndpoint),
+        Timeout = TimeSpan.FromMinutes(5)
+    };
+#pragma warning disable SKEXP0070
+    var kernel = Kernel.CreateBuilder()
+        .AddOpenAIChatCompletion(
+            modelId: togetherAIModelId,
+            apiKey: togetherAIApiKey,
+            httpClient: httpClient
+        )
+        //.AddOllamaChatCompletion(llmId, httpClient)
+        .Build();
+#pragma warning restore
+    return kernel;
+});
+
+// Add Firebase Authentication
+builder.Services.AddSingleton<FirebaseTokenVerifier>();
+
+builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
+//builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
+
+
+builder.Services.AddSingleton<UseCaseSpecGenerator>();
+builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
+builder.Services.AddSingleton<ERDiagramGenerator>();
+builder.Services.AddSingleton<SequenceDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
-builder.Services.AddSingleton<IAnalyzer<FlowchartDiagram>>(sp => sp.GetRequiredService<UseCaseSpecAnalyzerForFlowchart>());
+builder.Services.AddSingleton<AnalyzerForER>();
+builder.Services.AddSingleton<AnalyzerForSequence>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddSingleton<UsecaseDiagramGenerator>();
+builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
+
+builder.Services.AddSingleton<BasicFlowExtractor>();
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Software Diagram Generator Api", Version = "v1" });
-
-    // Swagger 2.+ support
-    //                var security = new Dictionary<string, IEnumerable<string>>
-    //                {
-    //                    {"Bearer", new string[] { }},
-    //                };
-    //                
-    //                c.AddSecurityDefinition("Bearer",
-    //                    new OpenApiSecurityScheme()
-    //                    {
-    //                        In = ParameterLocation.Header,
-    //                        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-    //                      Enter 'Bearer' [space] and then your token in the text input below.
-    //                      \r\n\r\nExample: 'Bearer 12345abcdef'",
-    //                        Name = "Authorization", 
-    //                        Type = SecuritySchemeType.ApiKey 
-    //                    });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Software Diagram Generator Api",
+        Version = "v1"
+    });
     c.AddSecurityDefinition("Authorization", new OpenApiSecurityScheme
     {
         Description = "Api key needed to access the endpoints. Authorization: Bearer xxxx",
@@ -84,8 +122,8 @@ builder.Services.AddSwaggerGen(c =>
                             },
                         },
                         new string[] {}
-                    }
-            });
+        }
+    });
 });
 
 
@@ -105,10 +143,14 @@ var app = builder.Build();
 
 app.UseCors();
 // Configure the HTTP request pipeline.
-// Enable Swagger in non-development environments
-app.UseSwagger();
-app.UseSwaggerUI();
 
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Software Diagram Generator Api v1");
+});
+
+app.UseReprLogging();
 
 app.UseExceptionHandler();
 

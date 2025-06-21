@@ -18,7 +18,5 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<Diagram> Diagrams { get; set; } = default!;
-    public DbSet<Share> Shares { get; set; } = default!;
-    public DbSet<Workspace> Workspaces { get; set; } = default!;
-    public DbSet<WorkspaceMember> WorkspaceMembers { get; set; } = default!;
+    public DbSet<Project> Projects { get; set; } = default!;
 }

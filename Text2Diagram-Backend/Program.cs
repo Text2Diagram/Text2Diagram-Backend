@@ -13,6 +13,7 @@ using Text2Diagram_Backend.HttpHandlers;
 using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Features.Sequence;
 using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.LLMGeminiService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,6 +78,15 @@ builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>
 
 builder.Services.AddSingleton<UseCaseSpecGenerator>();
 
+// Add Firebase Authentication
+builder.Services.AddSingleton<FirebaseTokenVerifier>();
+
+builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
+//builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
+
+
+builder.Services.AddSingleton<UseCaseSpecGenerator>();
+builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();

@@ -1,22 +1,20 @@
-﻿using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
+﻿
 using System.Text.Json;
+using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class BasicFlowExtractor
 {
-    private readonly Kernel _kernel;
+    private readonly ILLMService _llmService;
     private readonly ILogger<BasicFlowExtractor> _logger;
-    private IChatCompletionService _chatCompletionService;
 
     public BasicFlowExtractor(
-        Kernel kernel,
+        ILLMService llmService,
         ILogger<BasicFlowExtractor> logger)
     {
-        _kernel = kernel;
-        _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+        _llmService = llmService;
         _logger = logger;
     }
 
@@ -67,9 +65,7 @@ public class BasicFlowExtractor
             ```
             """;
 
-        var chatHistory = new ChatHistory();
-        chatHistory.AddUserMessage(prompt);
-        var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
+        var response = await _llmService.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var nodes = FlowchartHelpers.ExtractNodes(textContent);
@@ -132,9 +128,7 @@ public class BasicFlowExtractor
             ```
             """;
 
-        var chatHistory = new ChatHistory();
-        chatHistory.AddUserMessage(prompt);
-        var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
+        var response = await _llmService.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var edges = FlowchartHelpers.ExtractEdges(textContent);

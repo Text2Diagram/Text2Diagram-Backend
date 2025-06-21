@@ -8,12 +8,11 @@ using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Services;
 using Text2Diagram_Backend.Features.ERD;
 using Newtonsoft.Json.Serialization;
-using Npgsql;
 using Text2Diagram_Backend.HttpHandlers;
 using Text2Diagram_Backend.Authentication;
-using Text2Diagram_Backend.Features.Sequence;
 using Text2Diagram_Backend.Features.UsecaseDiagram;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
+using Text2Diagram_Backend.LLMGeminiService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,19 +77,29 @@ builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>
 
 builder.Services.AddSingleton<UseCaseSpecGenerator>();
 
+// Add Firebase Authentication
+builder.Services.AddSingleton<FirebaseTokenVerifier>();
+
+builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
+//builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
+
+
+builder.Services.AddSingleton<UseCaseSpecGenerator>();
+builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
-builder.Services.AddSingleton<SequenceDiagramGenerator>();
+//builder.Services.AddSingleton<SequenceDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<AnalyzerForER>();
-builder.Services.AddSingleton<AnalyzerForSequence>();
+//builder.Services.AddSingleton<AnalyzerForSequence>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
 
 builder.Services.AddSingleton<BasicFlowExtractor>();
 builder.Services.AddSingleton<AlternativeFlowExtractor>();
+builder.Services.AddSingleton<ExceptionFlowExtractor>();
 builder.Services.AddSingleton<FlowCategorizer>();
 
 

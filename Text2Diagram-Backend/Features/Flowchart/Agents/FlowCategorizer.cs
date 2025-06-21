@@ -1,21 +1,19 @@
-﻿using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
+﻿using Microsoft.SemanticKernel.ChatCompletion;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Text2Diagram_Backend.Common.Abstractions;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class FlowCategorizer
 {
+    private readonly ILLMService _llmService;
     private readonly ILogger<FlowCategorizer> _logger;
-    private readonly Kernel _kernel;
-    private readonly IChatCompletionService _chatCompletionService;
 
-    public FlowCategorizer(Kernel kernel, ILogger<FlowCategorizer> logger)
+    public FlowCategorizer(ILLMService llmService, ILogger<FlowCategorizer> logger)
     {
-        _kernel = kernel;
-        _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+        _llmService = llmService;
         _logger = logger;
     }
 
@@ -165,9 +163,8 @@ public class FlowCategorizer
 
             var chatHistory = new ChatHistory();
             chatHistory.AddUserMessage(prompt);
-
-            var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
-            var textContent = response.Content ?? string.Empty;
+            var response = await _llmService.GenerateContentAsync(prompt);
+            var textContent = response.Content;
             _logger.LogDebug("LLM response:\n{0}", textContent);
 
             if (string.IsNullOrEmpty(textContent))

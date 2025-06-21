@@ -14,8 +14,8 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
     public DiagramGeneratorFactory(
         FlowchartDiagramGenerator flowchartDiagramGenerator,
         ERDiagramGenerator eRDiagramGenerator,
-        SequenceDiagramGenerator sequenceDiagramGenerator,
-		UsecaseDiagramGenerator useCaseSpecGenerator)
+        //SequenceDiagramGenerator sequenceDiagramGenerator,
+        UsecaseDiagramGenerator useCaseSpecGenerator)
     {
         generators = new Dictionary<DiagramType, IDiagramGenerator>
         {
@@ -23,15 +23,15 @@ public class DiagramGeneratorFactory : IDiagramGeneratorFactory
                 DiagramType.Flowchart, flowchartDiagramGenerator
             },
 
-			{
-				DiagramType.ER, eRDiagramGenerator
-			},
-			{
-				DiagramType.UseCase, useCaseSpecGenerator
-			},
-			{
-				DiagramType.Sequence, sequenceDiagramGenerator
-			}
+            {
+                DiagramType.ER, eRDiagramGenerator
+            },
+            {
+                DiagramType.UseCase, useCaseSpecGenerator
+            },
+			//{
+			//	DiagramType.Sequence, sequenceDiagramGenerator
+			//}
 		};
     }
 

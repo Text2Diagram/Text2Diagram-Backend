@@ -1,138 +1,174 @@
-﻿//using Microsoft.SemanticKernel;
-//using Microsoft.SemanticKernel.ChatCompletion;
-//using System.Text.Json;
-//using Text2Diagram_Backend.Features.Flowchart.Components;
+﻿using System.Text.Json;
+using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Features.Flowchart.Components;
 
-//namespace Text2Diagram_Backend.Features.Flowchart.Agents;
+namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
-//public class ExceptionFlowExtractor
-//{
-//    private readonly Kernel _kernel;
-//    private readonly ILogger<ExceptionFlowExtractor> _logger;
-//    private readonly IChatCompletionService _chatCompletionService;
+public class ExceptionFlowExtractor
+{
+    private readonly ILLMService _llmService;
+    private readonly ILogger<ExceptionFlowExtractor> _logger;
 
-//    public ExceptionFlowExtractor(Kernel kernel, ILogger<ExceptionFlowExtractor> logger)
-//    {
-//        _kernel = kernel;
-//        _chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
-//        _logger = logger;
-//    }
+    public ExceptionFlowExtractor(ILLMService llmService, ILogger<ExceptionFlowExtractor> logger)
+    {
+        _llmService = llmService;
+        _logger = logger;
+    }
 
-//    public async Task<Flow> ExtractExceptionFlowAsync(string exceptionFlowDescription, string flowId)
-//    {
-//        var nodes = await ExtractNodesAsync(exceptionFlowDescription);
-//        var edges = await ExtractEdgesAsync(nodes, exceptionFlowDescription);
-//        return new Flow(flowId, nodes, edges);
-//    }
+    public async Task<Flow> ExtractExceptionFlowAsync(string exceptionFlowDescription, string flowName)
+    {
+        var nodes = await ExtractNodesAsync(exceptionFlowDescription);
+        var edges = await ExtractEdgesAsync(nodes, exceptionFlowDescription);
+        return new Flow(flowName, nodes, edges);
+    }
 
-//    private async Task<List<FlowNode>> ExtractNodesAsync(string exceptionFlowDescription)
-//    {
-//        var prompt = $"""
-//            You are an expert Flowchart Analyzer for an e-commerce purchase process.
-//            Analyze the following exception flow description from a use case for purchasing items online.
-//            An exception flow represents an error condition that prevents the normal purchase process (e.g., out-of-stock items, invalid quantities).
+    private async Task<List<FlowNode>> ExtractNodesAsync(string exceptionFlowDescription)
+    {
+        var prompt = $"""
+            You are an expert Flowchart Analyzer.
+            Analyze the following exception flow description.
+            {Prompts.NodeRules}
+            Ensure that:
+            - Nodes reflect the error nature of the flow (e.g., a Decision node for checking stock status).
+            - The Start node represents the entry point of the exception flow (e.g., 'User attempts to select out-of-stock item').
+            - The End node represents the error state (e.g., 'Checkbox disabled') or correction (e.g., 'User selects valid option').
+            - Include a Display node for error messages (e.g., 'Show error message') or a Process node for system restrictions (e.g., 'Disable Checkout button').
+            Use the following exception flow description:
+            {exceptionFlowDescription}
+            """
+            +
+            """
+            ### EXAMPLE:
+            INPUT:
+            1. The user cannot click the checkbox for a product that is out of stock or removed by the seller, even if it is in the shopping cart.
 
-//            {Prompts.NodeRules}
+            OUTPUT:
+            ```json
+            [
+                {"Id": "start_1", "Label": "User attempts to select item", "Type": "Start"},
+                {"Id": "decision_1", "Label": "Item out of stock or removed?", "Type": "Decision"},
+                {"Id": "process_1", "Label": "Disable checkbox", "Type": "Process"},
+                {"Id": "end_1", "Label": "Selection prevented", "Type": "End"}
+            ]
+            """
+            +
+            """
+            ### ANOTHER EXAMPLE:
+            INPUT:
+            2. When purchasing from the product detail page:
+               - The user cannot purchase a product with multiple options without selecting one available option.
+               - The user cannot purchase a product with a quantity exceeding the current stock or less than one.
+               - The user cannot purchase a product with no stock or an out-of-stock option for products with multiple options.
+               - The 'Checkout' button is disabled if the selected product is invalid.
 
-//            ### Context:
-//            - The use case involves a user purchasing items from a shopping cart or product detail page.
-//            - Exception flows typically involve error conditions like disabled actions (e.g., unclickable checkboxes) or invalid inputs (e.g., unselected options, invalid quantities).
-//            - The flow usually terminates with an error message or returns to a previous step.
-//            - Postconditions include preventing invalid purchases (e.g., out-of-stock items, invalid quantities).
+            OUTPUT:
+            ```json
+            [
+                {"Id": "start_1", "Label": "User attempts to purchase from product detail page", "Type": "Start"},
+                {"Id": "decision_1", "Label": "Valid product selection?", "Type": "Decision"},
+                {"Id": "display_1", "Label": "Show error message", "Type": "Display"},
+                {"Id": "process_1", "Label": "Disable Checkout button", "Type": "Process"},
+                {"Id": "input_1", "Label": "User corrects selection", "Type": "InputOutput"},
+                {"Id": "end_1", "Label": "Return to main flow", "Type": "End"}
+            ]
+            """
+            ;
 
-//            Ensure that:
-//            - Nodes reflect the error condition (e.g., InputOutput for error messages like 'Product out of stock').
-//            - The Start node represents the point where the exception occurs (e.g., 'User attempts to select item').
-//            - The End node represents termination (e.g., 'Process terminated') or a return to a previous step.
-//            - Include a Decision node for checking conditions (e.g., 'Is product in stock?', 'Is quantity valid?').
-//            Use the following exception flow description:
-//            {exceptionFlowDescription}
+        var response = await _llmService.GenerateContentAsync(prompt);
+        var textContent = response.Content ?? string.Empty;
 
-//            ### EXAMPLE:
-//            INPUT:
-//            1. The user cannot click the checkbox for a product that is out of stock or removed by the seller.
-//            2. The system displays an error message.
+        var nodes = FlowchartHelpers.ExtractNodes(textContent);
 
-//            OUTPUT:
-//            ```json
-//            [
-//                {{"Id": "start_1", "Label": "User attempts to select item", "Type": "Start"}},
-//                {{"Id": "decision_1", "Label": "Is product in stock?", "Type": "Decision"}},
-//                {{"Id": "output_1", "Label": "Display error: Product out of stock", "Type": "InputOutput"}},
-//                {{"Id": "end_1", "Label": "Process terminated", "Type": "End"}}
-//            ]
-//            """;
+        if (nodes.Where(n => n.Type == NodeType.Start).Count() != 1)
+        {
+            _logger.LogError("Exception flow must contain exactly one Start node.");
+            throw new InvalidOperationException("Exception flow must contain exactly one Start node.");
+        }
 
-//        var chatHistory = new ChatHistory();
-//        chatHistory.AddUserMessage(prompt);
-//        var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
-//        var textContent = response.Content ?? string.Empty;
+        if (!nodes.Any(n => n.Type == NodeType.End))
+        {
+            _logger.LogError("Exception flow must contain at least one End node.");
+            throw new InvalidOperationException("Exception flow must contain at least one End node.");
+        }
 
-//        var nodes = FlowchartHelpers.ExtractNodes(textContent);
+        var nodeIds = nodes.Select(n => n.Id).ToHashSet();
+        if (nodeIds.Count != nodes.Count)
+        {
+            _logger.LogError("Duplicate node IDs found in exception flow.");
+            throw new InvalidOperationException("Duplicate node IDs found in exception flow.");
+        }
 
-//        if (!nodes.Any(n => n.Type == NodeType.Start))
-//        {
-//            _logger.LogError("Exception flow must contain exactly one Start node.");
-//            throw new InvalidOperationException("Exception flow must contain exactly one Start node.");
-//        }
+        return nodes;
+    }
 
-//        if (!nodes.Any(n => n.Type == NodeType.End))
-//        {
-//            _logger.LogError("Exception flow must contain at least one End node.");
-//            throw new InvalidOperationException("Exception flow must contain at least one End node.");
-//        }
+    private async Task<List<FlowEdge>> ExtractEdgesAsync(List<FlowNode> nodes, string exceptionFlowDescription)
+    {
+        var prompt = $"""
+            You are an expert Flowchart Analyzer.
+            Analyze the following nodes and exception flow description to generate valid edges.
+            {Prompts.EdgeRules}
+            ### Context:
+            - Edges should reflect the sequence of steps in the exception flow, focusing on error conditions or restrictions.
+            - Decision nodes may branch to error paths (e.g., invalid selection) or correction paths (e.g., user retries).
+            - The flow typically ends with an error state (e.g., disabled action) or rejoins the main flow after correction.
+            - Use Arrow for mandatory transitions and OpenArrow for optional paths (e.g., user correction).
+            Ensure that:
+            - Edges follow the sequence described in the exception flow.
+            - Decision nodes have at least two edges with appropriate labels (e.g., 'Invalid'/'Valid').
+            - The final edge leads to an error state or reconnects to the main flow.
+            Nodes: {JsonSerializer.Serialize(nodes)}
+            Exception flow: {exceptionFlowDescription}
+            """
+            +
+            """
+            ### EXAMPLE:
+            INPUT:
+            Nodes: [
+                {"Id": "start_1", "Label": "User attempts to select item", "Type": "Start"},
+                {"Id": "decision_1", "Label": "Item out of stock or removed?", "Type": "Decision"},
+                {"Id": "process_1", "Label": "Disable checkbox", "Type": "Process"},
+                {"Id": "end_1", "Label": "Selection prevented", "Type": "End"}
+            ]
+            OUTPUT:
+            ```json
+            [
+                {"SourceId": "start_1", "TargetId": "decision_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "decision_1", "TargetId": "process_1", "Type": "Arrow", "Label": "Yes"},
+                {"SourceId": "decision_1", "TargetId": "end_1", "Type": "OpenArrow", "Label": "No"},
+                {"SourceId": "process_1", "TargetId": "end_1", "Type": "Arrow", "Label": ""}
+            ]
+            """
+            +
+            """
+            ### ANOTHER EXAMPLE:
+            INPUT:
+            Nodes: [
+                {"Id": "start_1", "Label": "User attempts to purchase from product detail page", "Type": "Start"},
+                {"Id": "decision_1", "Label": "Valid product selection?", "Type": "Decision"},
+                {"Id": "display_1", "Label": "Show error message", "Type": "Display"},
+                {"Id": "process_1", "Label": "Disable Checkout button", "Type": "Process"},
+                {"Id": "input_1", "Label": "User corrects selection", "Type": "InputOutput"},
+                {"Id": "end_1", "Label": "Return to main flow", "Type": "End"}
+            ]
+            OUTPUT:
+            ```json
+            [
+                {"SourceId": "start_1", "TargetId": "decision_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "decision_1", "TargetId": "display_1", "Type": "Arrow", "Label": "Invalid"},
+                {"SourceId": "decision_1", "TargetId": "end_1", "Type": "OpenArrow", "Label": "Valid"},
+                {"SourceId": "display_1", "TargetId": "process_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "process_1", "TargetId": "input_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "input_1", "TargetId": "end_1", "Type": "Arrow", "Label": ""}
+            ]
+            """
+            ;
 
-//        var nodeIds = nodes.Select(n => n.Id).ToHashSet();
-//        if (nodeIds.Count != nodes.Count)
-//        {
-//            _logger.LogError("Duplicate node IDs found in exception flow.");
-//            throw new InvalidOperationException("Duplicate node IDs found in exception flow.");
-//        }
+        var response = await _llmService.GenerateContentAsync(prompt);
+        var textContent = response.Content ?? string.Empty;
+        _logger.LogDebug("LLM response for edges:\n{0}", textContent);
 
-//        return nodes;
-//    }
+        var edges = FlowchartHelpers.ExtractEdges(textContent);
 
-//    private async Task<List<flowedge>> ExtractEdgesAsync(List<flownode> nodes, string exceptionFlowDescription)
-//    {
-//        var prompt = $"""
-//You are an expert Flowchart Analyzer for an e-commerce purchase process.
-//Analyze the following nodes and exception flow description to generate valid edges.</flownode></flowedge>
-
-//{Prompts.EdgeRules}
-
-//Context:
-//The exception flow represents an error condition in the purchase process.
-//Edges should reflect the sequence leading to the error and its resolution (e.g., displaying an error message).
-//Use CrossArrow for edges leading to termination (e.g., 'Process terminated').
-//Decision nodes branch to error paths (e.g., 'No' to an error message).
-//Ensure that:
-
-//Edges follow the sequence described in the exception flow.
-//Termination paths use CrossArrow to indicate failure.
-//Error messages are connected to End nodes or return to previous steps. Nodes: {JsonSerializer.Serialize(nodes)} Exception flow: {exceptionFlowDescription}
-//EXAMPLE:
-//INPUT:
-//Nodes: [
-//{{"Id": "start_1", "Label": "User attempts to select item", "Type": "Start"}},
-//{{"Id": "decision_1", "Label": "Is product in stock?", "Type": "Decision"}},
-//{{"Id": "output_1", "Label": "Display error: Product out of stock", "Type": "InputOutput"}},
-//{{"Id": "end_1", "Label": "Process terminated", "Type": "End"}}
-//]
-//OUTPUT:
-//[
-//    {{"SourceId": "start_1", "TargetId": "decision_1", "Type": "Arrow", "Label": ""}},
-//    {{"SourceId": "decision_1", "TargetId": "output_1", "Type": "CrossArrow", "Label": "No"}},
-//    {{"SourceId": "output_1", "TargetId": "end_1", "Type": "CrossArrow", "Label": ""}}
-//]
-//""";
-
-//        var chatHistory = new ChatHistory();
-//        chatHistory.AddUserMessage(prompt);
-//        var response = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, kernel: _kernel);
-//        var textContent = response.Content ?? string.Empty;
-
-//        var edges = FlowchartHelpers.ExtractEdges(textContent);
-
-//        return edges;
-//    }
-//}
+        return edges;
+    }
+}

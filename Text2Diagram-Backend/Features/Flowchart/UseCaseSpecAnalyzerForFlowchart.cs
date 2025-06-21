@@ -1,6 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
@@ -15,17 +13,20 @@ public class UseCaseSpecAnalyzerForFlowchart
     private readonly FlowCategorizer _flowCategorizer;
     private readonly BasicFlowExtractor _basicFlowExtractor;
     private readonly AlternativeFlowExtractor _alternativeFlowExtractor;
+    private readonly ExceptionFlowExtractor _exceptionFlowExtractor;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> _logger;
 
     public UseCaseSpecAnalyzerForFlowchart(
         FlowCategorizer flowCategorizer,
         BasicFlowExtractor basicFlowExtractor,
         AlternativeFlowExtractor alternativeFlowExtractor,
+        ExceptionFlowExtractor exceptionFlowExtractor,
         ILogger<UseCaseSpecAnalyzerForFlowchart> logger)
     {
         _flowCategorizer = flowCategorizer;
         _basicFlowExtractor = basicFlowExtractor;
         _alternativeFlowExtractor = alternativeFlowExtractor;
+        _exceptionFlowExtractor = exceptionFlowExtractor;
         _logger = logger;
     }
 
@@ -40,25 +41,23 @@ public class UseCaseSpecAnalyzerForFlowchart
     {
         var (basicFlowDescription, alternativeFlowsDescription, exceptionFlowsDescription) = await _flowCategorizer.CategorizeFlowsAsync(useCaseSpec);
 
-        //var flowExtractTasks = new List<Task<Flow>>();
-        //flowExtractTasks.Add(_basicFlowExtractor.ExtractBasicFlowAsync(basicFlowDescription));
-        //foreach (var alternativeFlowDescription in alternativeFlowsDescription)
-        //{
-        //    flowExtractTasks.Add(_alternativeFlowExtractor.ExtractAlternativeFlowAsync(alternativeFlowDescription.Description, alternativeFlowDescription.Name));
-        //}
-
-        //var result = await Task.WhenAll(flowExtractTasks);
-        //var basicFlow = result.First(f => string.IsNullOrEmpty(f.Name));
-        //var others = result.Where(f => !string.IsNullOrEmpty(f.Name)).ToList();
-        await Task.Delay(1000 * 60);
-        var basicFlow = await _basicFlowExtractor.ExtractBasicFlowAsync(basicFlowDescription);
-        await Task.Delay(1000 * 60);
-        var others = new List<Flow>();
+        var flowExtractTasks = new List<Task<Flow>>
+        {
+            _basicFlowExtractor.ExtractBasicFlowAsync(basicFlowDescription)
+        };
         foreach (var alternativeFlowDescription in alternativeFlowsDescription)
         {
-            await Task.Delay(1000 * 60);
-            others.Add(await _alternativeFlowExtractor.ExtractAlternativeFlowAsync(alternativeFlowDescription.Description, alternativeFlowDescription.Name));
+            flowExtractTasks.Add(_alternativeFlowExtractor.ExtractAlternativeFlowAsync(alternativeFlowDescription.Description, alternativeFlowDescription.Name));
         }
+
+        foreach (var exceptionFlowDescription in exceptionFlowsDescription)
+        {
+            flowExtractTasks.Add(_exceptionFlowExtractor.ExtractExceptionFlowAsync(exceptionFlowDescription.Description, exceptionFlowDescription.Name));
+        }
+
+        var result = await Task.WhenAll(flowExtractTasks);
+        var basicFlow = result.First(f => string.IsNullOrEmpty(f.Name));
+        var others = result.Where(f => !string.IsNullOrEmpty(f.Name)).ToList();
 
         _logger.LogInformation("Basic flow: {basicFlow}", JsonSerializer.Serialize(basicFlow));
 

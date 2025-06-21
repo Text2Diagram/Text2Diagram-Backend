@@ -77,6 +77,15 @@ builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>
 
 
 builder.Services.AddSingleton<UseCaseSpecGenerator>();
+
+// Add Firebase Authentication
+builder.Services.AddSingleton<FirebaseTokenVerifier>();
+
+builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
+//builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
+
+
+builder.Services.AddSingleton<UseCaseSpecGenerator>();
 builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();

@@ -13,6 +13,7 @@ using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Features.UsecaseDiagram;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
 using Text2Diagram_Backend.LLMGeminiService;
+using Text2Diagram_Backend.Features.Sequence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,10 +90,10 @@ builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddSingleton<FlowchartDiagramGenerator>();
 builder.Services.AddSingleton<ERDiagramGenerator>();
-//builder.Services.AddSingleton<SequenceDiagramGenerator>();
+builder.Services.AddSingleton<SequenceDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<AnalyzerForER>();
-//builder.Services.AddSingleton<AnalyzerForSequence>();
+builder.Services.AddSingleton<AnalyzerForSequence>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
 builder.Services.AddSingleton<UsecaseDiagramGenerator>();
 builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();

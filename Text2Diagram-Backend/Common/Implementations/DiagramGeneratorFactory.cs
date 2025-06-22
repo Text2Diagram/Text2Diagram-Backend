@@ -1,7 +1,7 @@
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.ERD;
-using Text2Diagram_Backend.Features.Flowchart;
+using Text2Diagram_Backend.Features.Flowchart.Agents;
 using Text2Diagram_Backend.Features.Sequence;
 using Text2Diagram_Backend.Features.UsecaseDiagram;
 

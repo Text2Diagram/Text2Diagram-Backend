@@ -19,7 +19,7 @@ public class AlternativeFlowExtractor
     {
         var nodes = await ExtractNodesAsync(alternativeFlowDescription);
         var edges = await ExtractEdgesAsync(nodes, alternativeFlowDescription);
-        return new Flow(flowName, nodes, edges);
+        return new Flow(flowName, FlowType.Alternative, nodes, edges);
     }
 
     private async Task<List<FlowNode>> ExtractNodesAsync(string alternativeFlowDescription)

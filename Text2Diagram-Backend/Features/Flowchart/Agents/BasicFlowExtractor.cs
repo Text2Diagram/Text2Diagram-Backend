@@ -1,5 +1,4 @@
-﻿
-using System.Text.Json;
+﻿using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
@@ -22,7 +21,7 @@ public class BasicFlowExtractor
     {
         var nodes = await ExtractNodesAsync(basicFlowDescription);
         var edges = await ExtractEdgesAsync(nodes, basicFlowDescription);
-        return new Flow("", nodes, edges);
+        return new Flow("", FlowType.Basic, nodes, edges);
     }
 
     private async Task<List<FlowNode>> ExtractNodesAsync(string basicFlowDescription)

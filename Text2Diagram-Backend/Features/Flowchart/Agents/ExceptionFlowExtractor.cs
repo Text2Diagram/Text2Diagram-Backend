@@ -19,7 +19,7 @@ public class ExceptionFlowExtractor
     {
         var nodes = await ExtractNodesAsync(exceptionFlowDescription);
         var edges = await ExtractEdgesAsync(nodes, exceptionFlowDescription);
-        return new Flow(flowName, nodes, edges);
+        return new Flow(flowName, FlowType.Exception, nodes, edges);
     }
 
     private async Task<List<FlowNode>> ExtractNodesAsync(string exceptionFlowDescription)

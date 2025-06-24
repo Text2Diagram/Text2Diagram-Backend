@@ -39,6 +39,7 @@ public class BasicFlowExtractor
             - The Start node is the entry point.
             - The End node reflects the final outcome.
             - Include a Subroutine node for complex steps.
+            - The node's Id must start with basic_flow_ prefix (e.g., basic_flow_start_1)
             ### EXAMPLE:
             INPUT:
             1. The user is on the shopping cart page and has added items to the cart.
@@ -53,13 +54,13 @@ public class BasicFlowExtractor
             OUTPUT:
             ```json
             [
-                {"Id": "start_1", "Label": "User views shopping cart", "Type": "Start"},
-                {"Id": "input_1", "Label": "User selects items via checkboxes", "Type": "InputOutput"},
-                {"Id": "output_1", "Label": "System displays cost summary", "Type": "InputOutput"},
-                {"Id": "process_1", "Label": "User clicks 'Checkout'", "Type": "Process"},
-                {"Id": "subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
-                {"Id": "subroutine_2", "Label": "Group items by shop", "Type": "Subroutine"},
-                {"Id": "end_1", "Label": "Redirect to order confirmation", "Type": "End"}
+                {"Id": "basic_flow_start_1", "Label": "User views shopping cart", "Type": "Start"},
+                {"Id": "basic_flow_input_1", "Label": "User selects items via checkboxes", "Type": "InputOutput"},
+                {"Id": "basic_flow_output_1", "Label": "System displays cost summary", "Type": "InputOutput"},
+                {"Id": "basic_flow_process_1", "Label": "User clicks 'Checkout'", "Type": "Process"},
+                {"Id": "basic_flow_subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
+                {"Id": "basic_flow_subroutine_2", "Label": "Group items by shop", "Type": "Subroutine"},
+                {"Id": "basic_flow_end_1", "Label": "Redirect to order confirmation", "Type": "End"}
             ]
             ```
             """;
@@ -95,7 +96,7 @@ public class BasicFlowExtractor
     {
         var prompt = $"""
             You are an expert Flowchart Analyzer.
-            Analyze the following nodes and the basic flow in a flowchart, then generate valid edges.
+            Analyze the following nodes and the basic flow descrition to generate valid edges.
             {Prompts.EdgeRules}
             Use the following nodes and basic flow as input:
             - Nodes: {JsonSerializer.Serialize(nodes)}
@@ -106,23 +107,23 @@ public class BasicFlowExtractor
             ### EXAMPLE:
             INPUT:
             [
-                {"Id": "start_1", "Label": "User views shopping cart", "Type": "Start"},
-                {"Id": "input_1", "Label": "User selects items via checkboxes", "Type": "InputOutput"},
-                {"Id": "output_1", "Label": "System displays cost summary", "Type": "InputOutput"},
-                {"Id": "process_1", "Label": "User clicks 'Checkout'", "Type": "Process"},
-                {"Id": "subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
-                {"Id": "subroutine_2", "Label": "Group items by shop", "Type": "Subroutine"},
-                {"Id": "end_1", "Label": "Redirect to order confirmation", "Type": "End"}
+                {"Id": "basic_flow_start_1", "Label": "User views shopping cart", "Type": "Start"},
+                {"Id": "basic_flow_input_1", "Label": "User selects items via checkboxes", "Type": "InputOutput"},
+                {"Id": "basic_flow_output_1", "Label": "System displays cost summary", "Type": "InputOutput"},
+                {"Id": "basic_flow_process_1", "Label": "User clicks 'Checkout'", "Type": "Process"},
+                {"Id": "basic_flow_subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
+                {"Id": "basic_flow_subroutine_2", "Label": "Group items by shop", "Type": "Subroutine"},
+                {"Id": "basic_flow_end_1", "Label": "Redirect to order confirmation", "Type": "End"}
             ]
             OUTPUT:
             ```json
             [
-                {"SourceId": "start_1", "TargetId": "input_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "input_1", "TargetId": "output_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "output_1", "TargetId": "process_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "process_1", "TargetId": "subroutine_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "subroutine_1", "TargetId": "subroutine_2", "Type": "Arrow", "Label": ""},
-                {"SourceId": "subroutine_2", "TargetId": "end_1", "Type": "Arrow", "Label": ""}
+                {"SourceId": "basic_flow_start_1", "TargetId": "basic_flow_input_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "basic_flow_input_1", "TargetId": "basic_flow_output_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "basic_flow_output_1", "TargetId": "basic_flow_process_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "basic_flow_process_1", "TargetId": "basic_flow_subroutine_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "basic_flow_subroutine_1", "TargetId": "basic_flow_subroutine_2", "Type": "Arrow", "Label": ""},
+                {"SourceId": "basic_flow_subroutine_2", "TargetId": "basic_flow_end_1", "Type": "Arrow", "Label": ""}
             ]
             ```
             """;

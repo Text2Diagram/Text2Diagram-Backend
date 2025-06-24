@@ -1,5 +1,5 @@
+
 using System.Text;
-using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
@@ -31,10 +31,15 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         try
         {
+            var useCaseDomain = await _analyzer.GetDomainAsync(input);
+            _logger.LogInformation("Use case domain: {0}", useCaseDomain);
             var flows = await _analyzer.AnalyzeAsync(input);
-            var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows);
-            flows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
-            string mermaidCode = GenerateMermaidCode(flows, branchingPoints);
+            var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
+            //flows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
+
+            FlowJsonSerializer.SerializeFlowsToJson(flows, _logger);
+
+            string mermaidCode = GenerateMermaidCode(modifiedFlows, branchingPoints);
             return mermaidCode;
         }
         catch (Exception ex)
@@ -51,8 +56,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
         var allNodes = new Dictionary<string, FlowNode>();
         var allEdges = new List<FlowEdge>();
-        var subflowConnections = new List<(string SubflowName, FlowEdge Edge)>();
-
         var basicFlow = flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
             ?? throw new InvalidOperationException("Basic flow is required.");
         var subflows = flows.Where(f => f.FlowType is FlowType.Alternative or FlowType.Exception).ToList();
@@ -70,68 +73,65 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             var branchNodeId = branchingPoints.FirstOrDefault(b => b.SubFlowName == subflow.Name).BranchNodeId;
             if (string.IsNullOrEmpty(branchNodeId))
             {
+                _logger.LogWarning("Subflow {SubflowName} has no branching point.", subflow.Name);
                 mermaid.AppendLine($"    %% Warning: Subflow '{subflow.Name}' is unconnected.");
                 continue;
             }
 
-            foreach (var node in subflow.Nodes)
+            // Skip start node and add other nodes with unique IDs
+            foreach (var node in subflow.Nodes.Where(n => n.Type != NodeType.Start))
             {
                 var nodeId = $"{subflow.Name}_{node.Id}";
-                allNodes[nodeId] = new FlowNode(nodeId, node.Label, node.Type);
-                _logger.LogDebug("Assigned node ID {0} for subflow {1}, original node {2}", nodeId, subflow.Name, node.Id);
-                // Update edges to use new node IDs
-                subflow.Edges.Where(e => e.SourceId == node.Id).ToList().ForEach(e => e.SourceId = nodeId);
-                subflow.Edges.Where(e => e.TargetId == node.Id).ToList().ForEach(e => e.TargetId = nodeId);
-            }
-
-            // Add subflow edges, including rejoin edges
-            allEdges.AddRange(subflow.Edges.Where(e => !IsDuplicateEdge(e, allEdges)));
-
-            // Connect subflow to main flow
-            var startNode = subflow.Nodes.FirstOrDefault(n => n.Type == NodeType.Start);
-            if (startNode != null)
-            {
-                var connectionEdge = new FlowEdge
-                (
-                    branchNodeId,
-                    $"{subflow.Name}_start_1",
-                    subflow.FlowType == FlowType.Exception ? EdgeType.OpenArrow : EdgeType.Arrow,
-                    ""
-                );
-
-                if (!IsDuplicateEdge(connectionEdge, allEdges))
+                if (!allNodes.ContainsKey(nodeId))
                 {
-                    subflowConnections.Add((subflow.Name, connectionEdge));
+                    allNodes[nodeId] = new FlowNode(nodeId, node.Label, node.Type);
+                    _logger.LogDebug("Assigned node ID {NodeId} for subflow {SubflowName}, original node {OriginalNodeId}",
+                        nodeId, subflow.Name, node.Id);
                 }
             }
-            else
+
+            // Update subflow edges, skipping those involving start node
+            foreach (var edge in subflow.Edges)
             {
-                _logger.LogWarning("Subflow {0} has no Start node.", subflow.Name);
+                var sourceId = edge.SourceId == "exception_flow_start_1" || edge.SourceId == "alternative_flow_start_1"
+                    ? GetFirstNonStartNodeId(subflow, edge)
+                    : $"{subflow.Name}_{edge.SourceId}";
+                var targetId = edge.TargetId == "exception_flow_start_1" || edge.TargetId == "alternative_flow_start_1"
+                    ? GetFirstNonStartNodeId(subflow, edge)
+                    : $"{subflow.Name}_{edge.TargetId}";
+                if (sourceId == null || targetId == null || sourceId == targetId) continue; // Skip invalid or self-referential edges
+
+                var newEdge = new FlowEdge(sourceId, targetId, edge.Type, edge.Label);
+                if (!IsDuplicateEdge(newEdge, allEdges))
+                {
+                    allEdges.Add(newEdge);
+                }
             }
         }
 
-        // Validate decision nodes
-        var decisionNodes = allNodes.Values.Where(n => n.Type == NodeType.Decision).ToList();
-        foreach (var subflow in subflows)
-        {
-            if (!decisionNodes.Any(n => n.Id.StartsWith($"decision_{subflow.Name}")))
-            {
-                _logger.LogWarning("No decision node found for subflow {0}.", subflow.Name);
-                mermaid.AppendLine($"    %% Warning: Missing decision node for subflow '{subflow.Name}'.");
-            }
-        }
-
-        // Generate node definitions
-        foreach (var node in allNodes.Values)
+        // Generate node definitions, grouped by flow
+        mermaid.AppendLine("    %% Basic Flow Nodes");
+        foreach (var node in allNodes.Values.Where(n => !subflows.Any(s => n.Id.StartsWith($"{s.Name}_"))))
         {
             string nodeDef = GetNodeWrappedLabel(node.Id, node.Type, node.Label);
             mermaid.AppendLine($"    {nodeDef}");
         }
 
+        foreach (var subflow in subflows)
+        {
+            mermaid.AppendLine($"    %% {FormatSubFlowName(subflow.Name)} Nodes");
+            foreach (var node in allNodes.Values.Where(n => n.Id.StartsWith($"{subflow.Name}_")))
+            {
+                string nodeDef = GetNodeWrappedLabel(node.Id, node.Type, node.Label);
+                mermaid.AppendLine($"    {nodeDef}");
+            }
+        }
+
         mermaid.AppendLine();
 
-        // Generate edges (basic flow and rejoin edges)
-        foreach (var edge in allEdges)
+        // Generate all edges without restrictive filtering
+        mermaid.AppendLine("    %% Flow Edges");
+        foreach (var edge in allEdges.OrderBy(e => e.SourceId))
         {
             string connector = GetEdgeConnector(edge.Type);
             string edgeLine = string.IsNullOrEmpty(edge.Label)
@@ -144,56 +144,21 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             mermaid.AppendLine(edgeLine);
         }
 
-        // Generate subgraphs for subflows (inline small subflows)
-        foreach (var subflow in subflows)
-        {
-            if (subflow.Nodes.Count <= 3) // Inline small subflows
-            {
-                mermaid.AppendLine($"    %% Inline subflow: {subflow.Name}");
-                foreach (var edge in subflow.Edges.Where(e => e.Label != "Rejoin"))
-                {
-                    string connector = GetEdgeConnector(edge.Type);
-                    string edgeLine = string.IsNullOrEmpty(edge.Label)
-                        ? $"    {edge.SourceId} {connector} {edge.TargetId}"
-                        : $"    {edge.SourceId} {connector}|{edge.Label}| {edge.TargetId}";
-                    mermaid.AppendLine(edgeLine);
-                }
-            }
-            else
-            {
-                mermaid.AppendLine();
-                mermaid.AppendLine($"    subgraph {subflow.Name}[\"{FormatSubFlowName(subflow.Name)}\"]");
-                foreach (var edge in subflow.Edges.Where(e => e.Label != "Rejoin"))
-                {
-                    string connector = GetEdgeConnector(edge.Type);
-                    string edgeLine = string.IsNullOrEmpty(edge.Label)
-                        ? $"        {edge.SourceId} {connector} {edge.TargetId}"
-                        : $"        {edge.SourceId} {connector}|{edge.Label}| {edge.TargetId}";
-                    mermaid.AppendLine(edgeLine);
-                }
-                mermaid.AppendLine("    end");
-            }
-        }
-
-        // Add subflow connection edges
-        foreach (var (subflowName, edge) in subflowConnections)
-        {
-            string connector = GetEdgeConnector(edge.Type);
-            string edgeLine = string.IsNullOrEmpty(edge.Label)
-                ? $"    {edge.SourceId} {connector} {edge.TargetId}"
-                : $"    {edge.SourceId} {connector}|{edge.Label}| {edge.TargetId}";
-            mermaid.AppendLine($"    %% Branch to {subflowName}");
-            mermaid.AppendLine(edgeLine);
-        }
-
-        // Add styling for exception flows
-        mermaid.AppendLine("    classDef exception fill:#f9c,stroke:#333,stroke-width:2px;");
-        foreach (var subflow in subflows.Where(f => f.FlowType == FlowType.Exception))
-        {
-            mermaid.AppendLine($"    class {subflow.Name}_start_1 exception;");
-        }
-
         return mermaid.ToString();
+    }
+
+    private string? GetFirstNonStartNodeId(Flow subflow, FlowEdge edge)
+    {
+        var startNode = subflow.Nodes.FirstOrDefault(n => n.Type == NodeType.Start);
+        if (startNode == null) return null;
+
+        var nextNode = subflow.Edges
+            .Where(e => e.SourceId == startNode.Id)
+            .Select(e => subflow.Nodes.FirstOrDefault(n => n.Id == e.TargetId))
+            .FirstOrDefault();
+        if (nextNode == null) return null;
+
+        return $"{subflow.Name}_{nextNode.Id}";
     }
 
     private bool IsDuplicateEdge(FlowEdge edge, List<FlowEdge> existingEdges)
@@ -207,12 +172,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
     private string FormatSubFlowName(string name)
     {
-        if (string.IsNullOrEmpty(name))
-            return name;
-
-        if (name.StartsWith("error_"))
-            name = name.Substring(6);
-
         return string.Join(" ", name.Split('_')
             .Select(word => word.Length > 0
                 ? char.ToUpper(word[0]) + word.Substring(1)

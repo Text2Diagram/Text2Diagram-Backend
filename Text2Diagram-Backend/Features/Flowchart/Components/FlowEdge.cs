@@ -2,9 +2,16 @@
 
 public class FlowEdge
 {
-    public string Id { get; set; } = string.Empty;
-    public string SourceId { get; set; } = string.Empty;
-    public string TargetId { get; set; } = string.Empty;
-    public string? Label { get; set; }
-    public EdgeType Type { get; set; }
+    public string SourceId { get; set; }
+    public string TargetId { get; set; }
+    public EdgeType Type { get; private set; }
+    public string? Label { get; private set; }
+
+    public FlowEdge(string sourceId, string targetId, EdgeType type, string? label)
+    {
+        SourceId = sourceId;
+        TargetId = targetId;
+        Type = type;
+        Label = label;
+    }
 }

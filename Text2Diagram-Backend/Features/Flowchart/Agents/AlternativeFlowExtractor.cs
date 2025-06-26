@@ -19,29 +19,22 @@ public class AlternativeFlowExtractor
     {
         var nodes = await ExtractNodesAsync(alternativeFlowDescription);
         var edges = await ExtractEdgesAsync(nodes, alternativeFlowDescription);
-        return new Flow(flowName, nodes, edges);
+        return new Flow(flowName, FlowType.Alternative, nodes, edges);
     }
 
     private async Task<List<FlowNode>> ExtractNodesAsync(string alternativeFlowDescription)
     {
         var prompt = $"""
-            You are an expert Flowchart Analyzer for an e-commerce purchase process.
-            Analyze the following alternative flow description from a use case for purchasing items online.
+            You are an expert Flowchart Analyzer.
             {Prompts.NodeRules}
-            ### Context:
-            - The use case involves a user purchasing items from a shopping cart or product detail page.
-            - Items from different shops are grouped into separate orders; items from the same shop form a single order.
-            - Alternative flows may involve selecting all items from one store or purchasing directly from a product detail page.
-            - User interactions include clicking checkboxes, selecting product options, or adjusting quantities.
-            - The flow typically connects to the main flow at the checkout process or order confirmation.
-
-            Ensure that:
-            - Nodes reflect the alternative nature of the flow (e.g., a Decision node for choosing a different path).
-            - The Start node represents the entry point of the alternative flow (e.g., 'User views product detail page').
-            - The End node connects to the main flow (e.g., 'Proceed to checkout') or completes the alternative path (e.g., 'Redirect to order confirmation').
-            - Include a Subroutine node for complex steps like grouping items by shop or processing checkout.
-            Use the following alternative flow description:
+            Analyze the following alternative flow description:
             {alternativeFlowDescription}
+            Ensure that:
+            - Nodes reflect the alternative nature of the flow.
+            - The Start node represents the entry point of the alternative flow.
+            - The End node connects to the main flow or completes the alternative path.
+            - Include a Subroutine node for complex steps.  
+            - The node's Id must start with alternative_flow_ prefix (e.g., alternative_flow_start_1)
             """
             +
             """
@@ -58,14 +51,14 @@ public class AlternativeFlowExtractor
             OUTPUT:
             ```json
             [
-                {"Id": "start_1", "Label": "User views product detail page", "Type": "Start"},
-                {"Id": "process_1", "Label": "User clicks 'Buy Now'", "Type": "Process"},
-                {"Id": "decision_1", "Label": "Product has multiple options?", "Type": "Decision"},
-                {"Id": "input_1", "Label": "User selects option", "Type": "InputOutput"},
-                {"Id": "input_2", "Label": "User adjusts quantity", "Type": "InputOutput"},
-                {"Id": "process_2", "Label": "User clicks 'Checkout'", "Type": "Process"},
-                {"Id": "subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
-                {"Id": "end_1", "Label": "Redirect to order confirmation", "Type": "End"}
+                {"Id": "alternative_flow_start_1", "Label": "User views product detail page", "Type": "Start"},
+                {"Id": "alternative_flow_process_1", "Label": "User clicks 'Buy Now'", "Type": "Process"},
+                {"Id": "alternative_flow_decision_1", "Label": "Product has multiple options?", "Type": "Decision"},
+                {"Id": "alternative_flow_input_1", "Label": "User selects option", "Type": "InputOutput"},
+                {"Id": "alternative_flow_input_2", "Label": "User adjusts quantity", "Type": "InputOutput"},
+                {"Id": "alternative_flow_process_2", "Label": "User clicks 'Checkout'", "Type": "Process"},
+                {"Id": "alternative_flow_subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
+                {"Id": "alternative_flow_end_1", "Label": "Redirect to order confirmation", "Type": "End"}
             ]
             """;
 
@@ -117,25 +110,25 @@ public class AlternativeFlowExtractor
         EXAMPLE:
         INPUT:
         Nodes: [
-        {"Id": "start_1", "Label": "User views product detail page", "Type": "Start"},
-        {"Id": "process_1", "Label": "User clicks 'Buy Now'", "Type": "Process"},
-        {"Id": "decision_1", "Label": "Product has multiple options?", "Type": "Decision"},
-        {"Id": "input_1", "Label": "User selects option", "Type": "InputOutput"},
-        {"Id": "input_2", "Label": "User adjusts quantity", "Type": "InputOutput"},
-        {"Id": "process_2", "Label": "User clicks 'Checkout'", "Type": "Process"},
-        {"Id": "subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
-        {"Id": "end_1", "Label": "Redirect to order confirmation", "Type": "End"}
+        {"Id": "alternative_flow_start_1", "Label": "User views product detail page", "Type": "Start"},
+        {"Id": "alternative_flow_process_1", "Label": "User clicks 'Buy Now'", "Type": "Process"},
+        {"Id": "alternative_flow_decision_1", "Label": "Product has multiple options?", "Type": "Decision"},
+        {"Id": "alternative_flow_input_1", "Label": "User selects option", "Type": "InputOutput"},
+        {"Id": "alternative_flow_input_2", "Label": "User adjusts quantity", "Type": "InputOutput"},
+        {"Id": "alternative_flow_process_2", "Label": "User clicks 'Checkout'", "Type": "Process"},
+        {"Id": "alternative_flow_subroutine_1", "Label": "System processes checkout", "Type": "Subroutine"},
+        {"Id": "alternative_flow_end_1", "Label": "Redirect to order confirmation", "Type": "End"}
         ]
         OUTPUT:
         [
-            {"SourceId": "start_1", "TargetId": "process_1", "Type": "Arrow", "Label": ""},
-            {"SourceId": "process_1", "TargetId": "decision_1", "Type": "Arrow", "Label": ""},
-            {"SourceId": "decision_1", "TargetId": "input_1", "Type": "Arrow", "Label": "Yes"},
-            {"SourceId": "input_1", "TargetId": "input_2", "Type": "Arrow", "Label": ""},
-            {"SourceId": "decision_1", "TargetId": "input_2", "Type": "OpenArrow", "Label": "No"},
-            {"SourceId": "input_2", "TargetId": "process_2", "Type": "Arrow", "Label": ""},
-            {"SourceId": "process_2", "TargetId": "subroutine_1", "Type": "Arrow", "Label": ""},
-            {"SourceId": "subroutine_1", "TargetId": "end_1", "Type": "Arrow", "Label": ""}
+            {"SourceId": "alternative_flow_start_1", "TargetId": "alternative_flow_process_1", "Type": "Arrow", "Label": ""},
+            {"SourceId": "alternative_flow_process_1", "TargetId": "alternative_flow_decision_1", "Type": "Arrow", "Label": ""},
+            {"SourceId": "alternative_flow_decision_1", "TargetId": "alternative_flow_input_1", "Type": "Arrow", "Label": "Yes"},
+            {"SourceId": "alternative_flow_input_1", "TargetId": "alternative_flow_input_2", "Type": "Arrow", "Label": ""},
+            {"SourceId": "alternative_flow_decision_1", "TargetId": "alternative_flow_input_2", "Type": "OpenArrow", "Label": "No"},
+            {"SourceId": "alternative_flow_input_2", "TargetId": "alternative_flow_process_2", "Type": "Arrow", "Label": ""},
+            {"SourceId": "alternative_flow_process_2", "TargetId": "alternative_flow_subroutine_1", "Type": "Arrow", "Label": ""},
+            {"SourceId": "alternative_flow_subroutine_1", "TargetId": "alternative_flow_end_1", "Type": "Arrow", "Label": ""}
         ]
         """;
 

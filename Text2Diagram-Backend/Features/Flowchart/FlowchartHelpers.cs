@@ -57,12 +57,7 @@ public static class FlowchartHelpers
 
             if (validNodeTypes.Contains(type))
             {
-                nodes.Add(new FlowNode()
-                {
-                    Id = id,
-                    Label = label,
-                    Type = Enum.Parse<NodeType>(type)
-                });
+                nodes.Add(new FlowNode(id, label, Enum.Parse<NodeType>(type)));
             }
         }
 
@@ -97,13 +92,7 @@ public static class FlowchartHelpers
                 continue;
             }
 
-            edges.Add(new FlowEdge()
-            {
-                SourceId = sourceId,
-                TargetId = targetId,
-                Type = Enum.Parse<EdgeType>(type),
-                Label = label
-            });
+            edges.Add(new FlowEdge(sourceId, targetId, Enum.Parse<EdgeType>(type), label));
         }
         return edges;
     }

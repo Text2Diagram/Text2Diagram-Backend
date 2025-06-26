@@ -102,6 +102,8 @@ builder.Services.AddSingleton<BasicFlowExtractor>();
 builder.Services.AddSingleton<AlternativeFlowExtractor>();
 builder.Services.AddSingleton<ExceptionFlowExtractor>();
 builder.Services.AddSingleton<FlowCategorizer>();
+builder.Services.AddSingleton<DecisionNodeInserter>();
+builder.Services.AddSingleton<RejoinPointIdentifier>();
 
 
 builder.Services.AddEndpointsApiExplorer();

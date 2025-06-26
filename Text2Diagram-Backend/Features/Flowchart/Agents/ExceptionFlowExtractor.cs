@@ -19,22 +19,22 @@ public class ExceptionFlowExtractor
     {
         var nodes = await ExtractNodesAsync(exceptionFlowDescription);
         var edges = await ExtractEdgesAsync(nodes, exceptionFlowDescription);
-        return new Flow(flowName, nodes, edges);
+        return new Flow(flowName, FlowType.Exception, nodes, edges);
     }
 
     private async Task<List<FlowNode>> ExtractNodesAsync(string exceptionFlowDescription)
     {
         var prompt = $"""
             You are an expert Flowchart Analyzer.
-            Analyze the following exception flow description.
             {Prompts.NodeRules}
+            Analyze the following exception flow description:
+            {exceptionFlowDescription}
             Ensure that:
             - Nodes reflect the error nature of the flow (e.g., a Decision node for checking stock status).
             - The Start node represents the entry point of the exception flow (e.g., 'User attempts to select out-of-stock item').
             - The End node represents the error state (e.g., 'Checkbox disabled') or correction (e.g., 'User selects valid option').
             - Include a Display node for error messages (e.g., 'Show error message') or a Process node for system restrictions (e.g., 'Disable Checkout button').
-            Use the following exception flow description:
-            {exceptionFlowDescription}
+            - The node's Id must start with exception_flow_ prefix (e.g., exception_flow_start_1)
             """
             +
             """
@@ -45,10 +45,10 @@ public class ExceptionFlowExtractor
             OUTPUT:
             ```json
             [
-                {"Id": "start_1", "Label": "User attempts to select item", "Type": "Start"},
-                {"Id": "decision_1", "Label": "Item out of stock or removed?", "Type": "Decision"},
-                {"Id": "process_1", "Label": "Disable checkbox", "Type": "Process"},
-                {"Id": "end_1", "Label": "Selection prevented", "Type": "End"}
+                {"Id": "exception_flow_start_1", "Label": "User attempts to select item", "Type": "Start"},
+                {"Id": "exception_flow_decision_1", "Label": "Item out of stock or removed?", "Type": "Decision"},
+                {"Id": "exception_flow_process_1", "Label": "Disable checkbox", "Type": "Process"},
+                {"Id": "exception_flow_end_1", "Label": "Selection prevented", "Type": "End"}
             ]
             """
             +
@@ -64,12 +64,12 @@ public class ExceptionFlowExtractor
             OUTPUT:
             ```json
             [
-                {"Id": "start_1", "Label": "User attempts to purchase from product detail page", "Type": "Start"},
-                {"Id": "decision_1", "Label": "Valid product selection?", "Type": "Decision"},
-                {"Id": "display_1", "Label": "Show error message", "Type": "Display"},
-                {"Id": "process_1", "Label": "Disable Checkout button", "Type": "Process"},
-                {"Id": "input_1", "Label": "User corrects selection", "Type": "InputOutput"},
-                {"Id": "end_1", "Label": "Return to main flow", "Type": "End"}
+                {"Id": "exception_flow_start_1", "Label": "User attempts to purchase from product detail page", "Type": "Start"},
+                {"Id": "exception_flow_decision_1", "Label": "Valid product selection?", "Type": "Decision"},
+                {"Id": "exception_flow_display_1", "Label": "Show error message", "Type": "Display"},
+                {"Id": "exception_flow_process_1", "Label": "Disable Checkout button", "Type": "Process"},
+                {"Id": "exception_flow_input_1", "Label": "User corrects selection", "Type": "InputOutput"},
+                {"Id": "exception_flow_end_1", "Label": "Return to main flow", "Type": "End"}
             ]
             """
             ;
@@ -124,18 +124,18 @@ public class ExceptionFlowExtractor
             ### EXAMPLE:
             INPUT:
             Nodes: [
-                {"Id": "start_1", "Label": "User attempts to select item", "Type": "Start"},
-                {"Id": "decision_1", "Label": "Item out of stock or removed?", "Type": "Decision"},
-                {"Id": "process_1", "Label": "Disable checkbox", "Type": "Process"},
-                {"Id": "end_1", "Label": "Selection prevented", "Type": "End"}
+                {"Id": "exception_flow_start_1", "Label": "User attempts to select item", "Type": "Start"},
+                {"Id": "exception_flow_decision_1", "Label": "Item out of stock or removed?", "Type": "Decision"},
+                {"Id": "exception_flow_process_1", "Label": "Disable checkbox", "Type": "Process"},
+                {"Id": "exception_flow_end_1", "Label": "Selection prevented", "Type": "End"}
             ]
             OUTPUT:
             ```json
             [
-                {"SourceId": "start_1", "TargetId": "decision_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "decision_1", "TargetId": "process_1", "Type": "Arrow", "Label": "Yes"},
-                {"SourceId": "decision_1", "TargetId": "end_1", "Type": "OpenArrow", "Label": "No"},
-                {"SourceId": "process_1", "TargetId": "end_1", "Type": "Arrow", "Label": ""}
+                {"SourceId": "exception_flow_start_1", "TargetId": "exception_flow_decision_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "exception_flow_decision_1", "TargetId": "exception_flow_process_1", "Type": "Arrow", "Label": "Yes"},
+                {"SourceId": "exception_flow_decision_1", "TargetId": "exception_flow_end_1", "Type": "OpenArrow", "Label": "No"},
+                {"SourceId": "exception_flow_process_1", "TargetId": "exception_flow_end_1", "Type": "Arrow", "Label": ""}
             ]
             """
             +
@@ -143,22 +143,22 @@ public class ExceptionFlowExtractor
             ### ANOTHER EXAMPLE:
             INPUT:
             Nodes: [
-                {"Id": "start_1", "Label": "User attempts to purchase from product detail page", "Type": "Start"},
-                {"Id": "decision_1", "Label": "Valid product selection?", "Type": "Decision"},
-                {"Id": "display_1", "Label": "Show error message", "Type": "Display"},
-                {"Id": "process_1", "Label": "Disable Checkout button", "Type": "Process"},
-                {"Id": "input_1", "Label": "User corrects selection", "Type": "InputOutput"},
-                {"Id": "end_1", "Label": "Return to main flow", "Type": "End"}
+                {"Id": "exception_flow_start_1", "Label": "User attempts to purchase from product detail page", "Type": "Start"},
+                {"Id": "exception_flow_decision_1", "Label": "Valid product selection?", "Type": "Decision"},
+                {"Id": "exception_flow_display_1", "Label": "Show error message", "Type": "Display"},
+                {"Id": "exception_flow_process_1", "Label": "Disable Checkout button", "Type": "Process"},
+                {"Id": "exception_flow_input_1", "Label": "User corrects selection", "Type": "InputOutput"},
+                {"Id": "exception_flow_end_1", "Label": "Return to main flow", "Type": "End"}
             ]
             OUTPUT:
             ```json
             [
-                {"SourceId": "start_1", "TargetId": "decision_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "decision_1", "TargetId": "display_1", "Type": "Arrow", "Label": "Invalid"},
-                {"SourceId": "decision_1", "TargetId": "end_1", "Type": "OpenArrow", "Label": "Valid"},
-                {"SourceId": "display_1", "TargetId": "process_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "process_1", "TargetId": "input_1", "Type": "Arrow", "Label": ""},
-                {"SourceId": "input_1", "TargetId": "end_1", "Type": "Arrow", "Label": ""}
+                {"SourceId": "exception_flow_start_1", "TargetId": "exception_flow_decision_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "exception_flow_decision_1", "TargetId": "exception_flow_display_1", "Type": "Arrow", "Label": "Invalid"},
+                {"SourceId": "exception_flow_decision_1", "TargetId": "exception_flow_end_1", "Type": "OpenArrow", "Label": "Valid"},
+                {"SourceId": "exception_flow_display_1", "TargetId": "exception_flow_process_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "exception_flow_process_1", "TargetId": "exception_flow_input_1", "Type": "Arrow", "Label": ""},
+                {"SourceId": "exception_flow_input_1", "TargetId": "exception_flow_end_1", "Type": "Arrow", "Label": ""}
             ]
             """
             ;

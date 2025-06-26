@@ -30,7 +30,6 @@ public class FlowCategorizer
 
             var jsonString = jsonMatch.Groups[1].Value.Trim();
 
-            // Deserialize JSON into FlowCategories
             FlowCategories flowCategories;
             try
             {

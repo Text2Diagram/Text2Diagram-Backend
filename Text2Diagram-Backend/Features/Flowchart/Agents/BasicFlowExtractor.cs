@@ -27,7 +27,7 @@ public class BasicFlowExtractor
     private async Task<List<FlowNode>> ExtractNodesAsync(string basicFlowDescription)
     {
         var prompt = $"""
-            You are an expert Flowchart Analyzer.
+            You are an expert FlowchartDiagram Analyzer.
             {Prompts.NodeRules}
             Analyze the following basic flow description:
             {basicFlowDescription}
@@ -72,14 +72,14 @@ public class BasicFlowExtractor
 
         if (nodes.Where(n => n.Type == NodeType.Start).Count() != 1)
         {
-            _logger.LogError("Flowchart must contain exactly one Start node.");
-            throw new InvalidOperationException("Flowchart must contain exactly one Start node.");
+            _logger.LogError("FlowchartDiagram must contain exactly one Start node.");
+            throw new InvalidOperationException("FlowchartDiagram must contain exactly one Start node.");
         }
 
         if (!nodes.Any(n => n.Type == NodeType.End))
         {
-            _logger.LogError("Flowchart must contain at least one End node.");
-            throw new InvalidOperationException("Flowchart must contain at least one End node.");
+            _logger.LogError("FlowchartDiagram must contain at least one End node.");
+            throw new InvalidOperationException("FlowchartDiagram must contain at least one End node.");
         }
 
         var nodeIds = nodes.Select(n => n.Id).ToHashSet();
@@ -95,7 +95,7 @@ public class BasicFlowExtractor
     private async Task<List<FlowEdge>> ExtractEdgesAsync(List<FlowNode> nodes, string basicFlowDescription)
     {
         var prompt = $"""
-            You are an expert Flowchart Analyzer.
+            You are an expert FlowchartDiagram Analyzer.
             Analyze the following nodes and the basic flow descrition to generate valid edges.
             {Prompts.EdgeRules}
             Use the following nodes and basic flow as input:

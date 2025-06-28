@@ -90,7 +90,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                 {
                     throw new InvalidOperationException("Usecase name cannot be null or empty.");
                 }
-                usecases.Add(new UseCase { Name = name});
+                usecases.Add(new UseCase { Name = name });
             }
             return usecases;
         }

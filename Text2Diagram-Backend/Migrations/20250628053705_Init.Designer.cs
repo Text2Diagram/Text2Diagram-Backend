@@ -9,11 +9,11 @@ using Text2Diagram_Backend.Data;
 
 #nullable disable
 
-namespace Text2Diagram_Backend.Data.Migrations
+namespace Text2Diagram_Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250502150022_FixDb")]
-    partial class FixDb
+    [Migration("20250628053705_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -89,7 +89,7 @@ namespace Text2Diagram_Backend.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<object>("Data")
+                    b.Property<string>("Data")
                         .IsRequired()
                         .HasColumnType("jsonb");
 
@@ -102,9 +102,7 @@ namespace Text2Diagram_Backend.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -113,6 +111,26 @@ namespace Text2Diagram_Backend.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("Text2Diagram_Backend.Data.Models.TempDiagram", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("DiagramData")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("DiagramType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TempDiagrams");
                 });
 
             modelBuilder.Entity("Text2Diagram_Backend.Data.Models.Diagram", b =>

@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Data;
+using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
@@ -13,19 +15,22 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private readonly UseCaseSpecAnalyzerForFlowchart _analyzer;
     private readonly DecisionNodeInserter _decisionNodeInserter;
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
+    private readonly ApplicationDbContext _dbContext;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
         ILLMService llmService,
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
-        RejoinPointIdentifier rejoinPointIdentifier)
+        RejoinPointIdentifier rejoinPointIdentifier,
+        ApplicationDbContext dbContext)
     {
         _logger = logger;
         _llmService = llmService;
         _analyzer = analyzer;
         _decisionNodeInserter = decisionNodeInserter;
         _rejoinPointIdentifier = rejoinPointIdentifier;
+        _dbContext = dbContext;
     }
 
     public async Task<string> GenerateAsync(string input)
@@ -38,9 +43,22 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
             modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
 
-            FlowJsonSerializer.SerializeFlowsToJson(flows, _logger);
+            var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
 
-            string mermaidCode = await GenerateMermaidCodeAsync(modifiedFlows, branchingPoints);
+            string jsonString = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            _logger.LogInformation("{JsonString}", jsonString);
+            _dbContext.TempDiagrams.Add(new TempDiagram()
+            {
+                DiagramData = jsonString,
+                DiagramType = DiagramType.Flowchart
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
             return mermaidCode;
         }
         catch (Exception ex)
@@ -50,16 +68,16 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
     }
 
-    private async Task<string> GenerateMermaidCodeAsync(List<Flow> flows, List<(string SubFlowName, string BranchNodeId)> branchingPoints)
+    public async Task<string> GenerateMermaidCodeAsync(FlowchartDiagram flowchart)
     {
         var mermaid = new StringBuilder();
         mermaid.AppendLine("graph TD");
 
         var allNodes = new Dictionary<string, FlowNode>();
         var allEdges = new List<FlowEdge>();
-        var basicFlow = flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
+        var basicFlow = flowchart.Flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
             ?? throw new InvalidOperationException("Basic flow is required.");
-        var subflows = flows.Where(f => f.FlowType is FlowType.Alternative or FlowType.Exception).ToList();
+        var subflows = flowchart.Flows.Where(f => f.FlowType is FlowType.Alternative or FlowType.Exception).ToList();
 
         // Add basic flow nodes and edges
         foreach (var node in basicFlow.Nodes)
@@ -83,7 +101,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         // Process subflows
         foreach (var subflow in subflows)
         {
-            var branchNodeId = branchingPoints.FirstOrDefault(b => b.SubFlowName == subflow.Name).BranchNodeId;
+            var branchingPoint = flowchart.BranchingPoints.FirstOrDefault(b => b.SubFlowName == subflow.Name);
+            if (branchingPoint == null)
+            {
+                continue;
+            }
+            var branchNodeId = branchingPoint.BranchNodeId;
             if (string.IsNullOrEmpty(branchNodeId))
             {
                 _logger.LogWarning("Subflow {SubFlowName} has no branching point.", subflow.Name);
@@ -162,7 +185,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
 
         // Cleanup: Use LLM to fix duplicates, incorrect sequence, and add rejoin edges
-        (allNodes, allEdges) = await CleanupFlowchartAsync(allNodes, allEdges, flows, subflows);
+        (allNodes, allEdges) = await CleanupFlowchartAsync(allNodes, allEdges, flowchart.Flows, subflows);
 
         // Generate node definitions
         mermaid.AppendLine("    %% Basic Flow Nodes");

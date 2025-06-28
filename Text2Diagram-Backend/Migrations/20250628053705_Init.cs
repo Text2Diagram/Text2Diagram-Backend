@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Text2Diagram_Backend.Data.Migrations
+namespace Text2Diagram_Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class FixDb : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,15 +17,28 @@ namespace Text2Diagram_Backend.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    Data = table.Column<object>(type: "jsonb", nullable: false),
+                    Data = table.Column<string>(type: "jsonb", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Thumbnail = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "NOW()")
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Projects", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TempDiagrams",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    DiagramData = table.Column<string>(type: "jsonb", nullable: false),
+                    DiagramType = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TempDiagrams", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -65,6 +78,9 @@ namespace Text2Diagram_Backend.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Diagrams");
+
+            migrationBuilder.DropTable(
+                name: "TempDiagrams");
 
             migrationBuilder.DropTable(
                 name: "Projects");

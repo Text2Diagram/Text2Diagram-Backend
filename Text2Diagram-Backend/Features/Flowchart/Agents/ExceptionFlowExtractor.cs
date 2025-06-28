@@ -25,7 +25,7 @@ public class ExceptionFlowExtractor
     private async Task<List<FlowNode>> ExtractNodesAsync(string exceptionFlowDescription)
     {
         var prompt = $"""
-            You are an expert Flowchart Analyzer.
+            You are an expert FlowchartDiagram Analyzer.
             {Prompts.NodeRules}
             Analyze the following exception flow description:
             {exceptionFlowDescription}
@@ -104,7 +104,7 @@ public class ExceptionFlowExtractor
     private async Task<List<FlowEdge>> ExtractEdgesAsync(List<FlowNode> nodes, string exceptionFlowDescription)
     {
         var prompt = $"""
-            You are an expert Flowchart Analyzer.
+            You are an expert FlowchartDiagram Analyzer.
             Analyze the following nodes and exception flow description to generate valid edges.
             {Prompts.EdgeRules}
             ### Context:

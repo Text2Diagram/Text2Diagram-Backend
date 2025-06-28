@@ -15,10 +15,10 @@ public class DecisionNodeInserter
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<(List<Flow> Flows, List<(string SubflowName, string BranchNodeId)> BranchingPoints)>
+    public async Task<(List<Flow> Flows, List<BranchingPoint> BranchingPoints)>
         InsertDecisionNodesAsync(List<Flow> flows, string useCaseDomain = "general")
     {
-        var branchingPoints = new List<(string SubflowName, string BranchNodeId)>();
+        var branchingPoints = new List<BranchingPoint>();
         var basicFlow = flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
             ?? throw new InvalidOperationException("Basic flow is required.");
         var subflows = flows.Where(f => f.FlowType is FlowType.Alternative or FlowType.Exception).ToList();
@@ -94,7 +94,7 @@ public class DecisionNodeInserter
                 continue;
             }
 
-            branchingPoints.Add((subflow.Name, decisionNodeId));
+            branchingPoints.Add(new BranchingPoint(subflow.Name, decisionNodeId));
             _logger.LogInformation("Inserted decision node {DecisionNodeId} for subflow {SubflowName}, to {TargetId} from {InsertionNodeId}.",
                 decisionNodeId, subflow.Name, targetId, insertionNodeId);
         }

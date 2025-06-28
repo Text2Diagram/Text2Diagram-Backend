@@ -72,7 +72,7 @@ builder.Services.AddSingleton(sp =>
 // Add Firebase Authentication
 builder.Services.AddSingleton<FirebaseTokenVerifier>();
 
-builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
+builder.Services.AddScoped<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
 //builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
 
 
@@ -81,30 +81,29 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 // Add Firebase Authentication
 builder.Services.AddSingleton<FirebaseTokenVerifier>();
 
-builder.Services.AddSingleton<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
-//builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
-
 
 builder.Services.AddSingleton<UseCaseSpecGenerator>();
 builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
-builder.Services.AddSingleton<FlowchartDiagramGenerator>();
-builder.Services.AddSingleton<ERDiagramGenerator>();
-builder.Services.AddSingleton<SequenceDiagramGenerator>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
-builder.Services.AddSingleton<AnalyzerForER>();
-builder.Services.AddSingleton<AnalyzerForSequence>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzerForFlowchart>();
-builder.Services.AddSingleton<UsecaseDiagramGenerator>();
-builder.Services.AddSingleton<UseCaseSpecAnalyzerForUsecaseDiagram>();
+builder.Services.AddScoped<FlowchartDiagramGenerator>();
+builder.Services.AddScoped<ERDiagramGenerator>();
+builder.Services.AddScoped<SequenceDiagramGenerator>();
+builder.Services.AddScoped<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddScoped<AnalyzerForER>();
+builder.Services.AddScoped<AnalyzerForSequence>();
+builder.Services.AddScoped<UseCaseSpecAnalyzerForFlowchart>();
+builder.Services.AddScoped<UsecaseDiagramGenerator>();
+builder.Services.AddScoped<UseCaseSpecAnalyzerForUsecaseDiagram>();
 
-builder.Services.AddSingleton<BasicFlowExtractor>();
-builder.Services.AddSingleton<AlternativeFlowExtractor>();
-builder.Services.AddSingleton<ExceptionFlowExtractor>();
-builder.Services.AddSingleton<FlowCategorizer>();
-builder.Services.AddSingleton<DecisionNodeInserter>();
-builder.Services.AddSingleton<RejoinPointIdentifier>();
+builder.Services.AddScoped<BasicFlowExtractor>();
+builder.Services.AddScoped<AlternativeFlowExtractor>();
+builder.Services.AddScoped<ExceptionFlowExtractor>();
+builder.Services.AddScoped<FlowCategorizer>();
+builder.Services.AddScoped<DecisionNodeInserter>();
+builder.Services.AddScoped<RejoinPointIdentifier>();
 
+
+builder.Services.AddScoped<RegenerateFlowchartDiagramAgent>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

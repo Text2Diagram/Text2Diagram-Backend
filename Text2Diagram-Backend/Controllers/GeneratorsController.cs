@@ -1,9 +1,12 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart;
+using Text2Diagram_Backend.Features.Flowchart.Agents;
 
 namespace Text2Diagram_Backend.Controllers;
 
@@ -12,19 +15,30 @@ public record GenerateDiagramRequest(
     string? TextInput,
     IFormFile? FileInput);
 
+public record RegenerateDiagramRequest(
+    string Feedback,
+    Guid DiagramId
+);
+
 [ApiController]
 [Route("[controller]")]
 public class GeneratorsController : ControllerBase
 {
     private readonly IDiagramGeneratorFactory generatorFactory;
+    private readonly RegenerateFlowchartDiagramAgent _regenerateFlowchartDiagramAgent;
     private readonly UseCaseSpecGenerator useCaseSpecGenerator;
+    private readonly ApplicationDbContext _dbContext;
 
     public GeneratorsController(
         IDiagramGeneratorFactory generatorFactory,
-        UseCaseSpecGenerator useCaseSpecGenerator)
+        RegenerateFlowchartDiagramAgent regenerateFlowchartDiagramAgent,
+        UseCaseSpecGenerator useCaseSpecGenerator,
+        ApplicationDbContext dbContext)
     {
         this.generatorFactory = generatorFactory;
+        _regenerateFlowchartDiagramAgent = regenerateFlowchartDiagramAgent;
         this.useCaseSpecGenerator = useCaseSpecGenerator;
+        _dbContext = dbContext;
     }
 
     [HttpPost]
@@ -107,4 +121,24 @@ public class GeneratorsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("regenerate")]
+    public async Task<IActionResult> RegenerateDiagram([FromForm] RegenerateDiagramRequest request)
+    {
+        var diagram = await _dbContext.TempDiagrams.FirstOrDefaultAsync(d => d.Id == request.DiagramId);
+
+        if (diagram == null)
+        {
+            return NotFound($"Diagram with id {request.DiagramId} not found.");
+        }
+
+        string result = string.Empty;
+
+        if (diagram.DiagramType == DiagramType.Flowchart)
+        {
+
+            result = await _regenerateFlowchartDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
+        }
+
+        return Ok(result);
+    }
 }

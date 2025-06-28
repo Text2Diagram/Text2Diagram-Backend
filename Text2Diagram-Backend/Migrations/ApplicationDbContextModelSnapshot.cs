@@ -110,6 +110,26 @@ namespace Text2Diagram_Backend.Migrations
                     b.ToTable("Projects");
                 });
 
+            modelBuilder.Entity("Text2Diagram_Backend.Data.Models.TempDiagram", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("DiagramData")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("DiagramType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TempDiagrams");
+                });
+
             modelBuilder.Entity("Text2Diagram_Backend.Data.Models.Diagram", b =>
                 {
                     b.HasOne("Text2Diagram_Backend.Data.Models.Project", null)

@@ -19,4 +19,5 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Diagram> Diagrams { get; set; } = default!;
     public DbSet<Project> Projects { get; set; } = default!;
+    public DbSet<TempDiagram> TempDiagrams { get; set; } = default!;
 }

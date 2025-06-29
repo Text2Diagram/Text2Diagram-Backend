@@ -1,4 +1,5 @@
 
+using DocumentFormat.OpenXml.Office.CustomUI;
 using Newtonsoft.Json;
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
@@ -26,16 +27,7 @@ public class SequenceDiagramGenerator : IDiagramGenerator
         {
             // Extract and generate diagram structure directly from input
             var diagram = await analyzer.AnalyzeAsync(input);
-
-            logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", diagram);
-
-            return JsonConvert.SerializeObject(diagram);
-            //// Generate Mermaid syntax
-            //string mermaidCode = GenerateMermaidCode(diagram, false);
-
-            //logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
-
-            //return mermaidCode;
+            return diagram;
         }
         catch (Exception ex)
         {
@@ -59,8 +51,8 @@ public class SequenceDiagramGenerator : IDiagramGenerator
                 switch (element)
                 {
                     case Statement statement:
-                        var from = statement.Participant1?.Trim();
-                        var to = statement.Participant2?.Trim();
+                        var from = statement.Sender?.Trim();
+                        var to = statement.Receiver?.Trim();
                         var message = statement.Message?.Trim();
                         var arrow = string.IsNullOrEmpty(statement.ArrowType) ? "->>" : statement.ArrowType;
 

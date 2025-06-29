@@ -22,7 +22,6 @@ namespace Text2Diagram_Backend.Features.Sequence.NewWay
 
 				finalSteps.Add(new StepFinalDto
 				{
-					Step = stepText,
 					Sender = participant?.Sender ?? "Unknown",
 					Receiver = participant?.Receiver ?? "Unknown",
 					Message = ExtractMessageFunc.ExtractMessage(stepText, participant),

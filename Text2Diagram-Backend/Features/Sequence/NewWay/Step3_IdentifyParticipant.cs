@@ -5,28 +5,27 @@
 		public static string IdentifyParticipants(string flowUseCases)
 		{
 			return @"
-				You are a senior software engineer helping to create a sequence diagram.
+				You are a senior software engineer with deep knowledge of sequence diagrams.
 
-				You are given a combinedFlow of a use case, which is a list of steps that include normal, alternative, and exception flows.
+				You are given a list of steps called combinedFlow from a software use case specification. This list includes basic, alternative, and exception flows.
 
 				Your task is to identify the two participants involved in each step:
-				- The **sender** (who initiates or performs the action)
-				- The **receiver** (who is affected or responds to the action)
+				- ""sender"": the actor or system that initiates or performs the action
+				- ""receiver"": the actor, system, or component that receives or reacts to the action
 
-				Rules:
-				- Only include a receiver if it's **clearly stated or implied** in the step.
-				- If an action involves only one actor (e.g., ""The user opens the app.""), set `receiver` to an empty string `""""`.
-				- Use participant names explicitly mentioned in the sentence (e.g., User, System, Store).
-				- For steps like ""Alternative: ..."" or ""Exception: ..."", still analyze the action and extract participants accordingly.
+				For each step, analyze the action carefully and assign appropriate participants.
+				If the step involves an internal system interaction, identify the correct internal service or component (e.g., PaymentService, InventoryService, Database).
+				Avoid defaulting everything to just ""User"" and ""System"" unless it's truly correct.
+				Do not guess beyond the context, but be as specific as logically possible.
 
-				Each step should be mapped in this JSON format:
+				Return the result as an **ordered list of JSON objects** in the following format:
+
+				```json
 				{
 				  ""step"": ""<original step text>"",
-				  ""sender"": ""<participant who performs the action>"",
-				  ""receiver"": ""<participant who receives or is affected, or empty string if none>""
+				  ""sender"": ""<name of sender participant>"",
+				  ""receiver"": ""<name of receiver participant>""
 				}
-
-				Return the result as an **ordered JSON list** of these objects.
 
 				Here is the combined flow to process:
 			" + flowUseCases;

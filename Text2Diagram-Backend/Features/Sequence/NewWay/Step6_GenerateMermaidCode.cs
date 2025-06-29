@@ -1,24 +1,78 @@
-﻿namespace Text2Diagram_Backend.Features.Sequence.NewWay
+﻿using System.Text.Json;
+using Text2Diagram_Backend.Features.Sequence.NewWay.Objects;
+
+namespace Text2Diagram_Backend.Features.Sequence.NewWay
 {
 	public static class Step6_GenerateMermaidCode
 	{
-		public static string GenerateMermaidCode(string flow)
+		public static string GenerateMermaidCode(List<StepFinalDto> allSteps)
 		{
+            //var batch = SplitFlowIntoBatches(allSteps);
 			return @"
-				You are given a list of structured steps from a use case flow.
+You are an expert AI agent that converts structured software steps into Mermaid-compatible sequence diagram code.
+---
+### INPUT FORMAT
+You are given a list of JSON objects, each describing one step in a use case interaction flow.  
+Each object has:
+- `Step`: Full text of the flow step
+- `Sender`: Who initiates the action
+- `Receiver`: Who receives or processes the action
+- `Message`: Description of the interaction
+- `ActionType`: One of: `""normal""`, `""alt""`, `""loop""`, `""par""`, `""critical""`
+- `Condition`: Optional string, used for alt/loop/critical control blocks
 
-				Each step includes sender, receiver, message, actionType, and optional condition.
+📌 Here is an example input:
+```json
+[
+  {
+    ""Step"": ""User clicks login"",
+    ""Sender"": ""User"",
+    ""Receiver"": ""UI"",
+    ""Message"": ""click login"",
+    ""ActionType"": ""normal"",
+    ""Condition"": """"
+  },
+  {
+    ""Step"": ""UI checks credentials"",
+    ""Sender"": ""UI"",
+    ""Receiver"": ""AuthService"",
+    ""Message"": ""validate credentials"",
+    ""ActionType"": ""alt"",
+    ""Condition"": ""If credentials are valid""
+  },
+  {
+    ""Step"": ""Show success"",
+    ""Sender"": ""AuthService"",
+    ""Receiver"": ""User"",
+    ""Message"": ""Login success"",
+    ""ActionType"": ""normal"",
+    ""Condition"": """"
+  }
+]
 
-				Please convert this into Mermaid sequence diagram code.
+### OUTPUT FORMAT:
+sequenceDiagram
+    participant User
+    participant UI
+    participant AuthService
 
-				- For `actionType = normal`, use standard message lines.
-				- For `actionType = alt`, `else`, `loop`, `par`, or `critical`, wrap steps accordingly using Mermaid control blocks.
-				- Ensure nesting and indentation is correct.
+    User->>UI: click login
+    UI->>AuthService: validate credentials
+    alt If credentials are valid
+        AuthService-->>User: Login success
+    end
+---------
+Here is the input:
+" + JsonSerializer.Serialize(allSteps);
+		}
 
-				Return only the Mermaid diagram content.
-
-				Here is the list of steps:
-			" + flow;
+		public static List<List<StepFinalDto>> SplitFlowIntoBatches(List<StepFinalDto> allSteps, int batchSize = 10)
+		{
+			return allSteps
+				.Select((step, index) => new { step, index })
+				.GroupBy(x => x.index / batchSize)
+				.Select(g => g.Select(x => x.step).ToList())
+				.ToList();
 		}
 	}
 }

@@ -18,7 +18,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
             +
             """
                 ### INSTRUCTIONS:
-                - Actors are typically external to the system and interact by initiating or receiving actions. If actor has multiple words, using underscores between each word (e.g., "Online_Shopper", "Restaurant_Receptionist").
+                - Actors are typically external to the system and interact by initiating or receiving actions. If actor has multiple words, using underscores between each word (e.g., "Online Shopper", "Restaurant Receptionist").
                 - Common actor types include users, roles, departments, or integrated systems.
                 - Do **not** include internal system components or features as actors.
                 - Group similar users under generalized role names when appropriate (e.g., "Customer", "Doctor").
@@ -53,10 +53,10 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                     { "Name": "Patient" },
                     { "Name": "Doctor" },
                     { "Name": "Receptionist" },
-                    { "Name": "Laboratory_Staff" },
-                    { "Name": "Insurance_System" },
-                    { "Name": "Hospital_Administrator" },
-                    { "Name": "System_Administrator" }
+                    { "Name": "Laboratory Staff" },
+                    { "Name": "Insurance System" },
+                    { "Name": "Hospital Administrator" },
+                    { "Name": "System Administrator" }
                   ]
                 }
                 ```

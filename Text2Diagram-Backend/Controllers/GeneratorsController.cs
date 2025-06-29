@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
@@ -20,6 +21,7 @@ public record RegenerateDiagramRequest(
     Guid DiagramId
 );
 
+[FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
 public class GeneratorsController : ControllerBase
@@ -110,8 +112,16 @@ public class GeneratorsController : ControllerBase
             return BadRequest("Empty file");
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
-        var result = await diagramGenerator.GenerateAsync(input);
-        return Ok(result);
+        var diagram = await diagramGenerator.GenerateAsync(input);
+
+        var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
+
+        return Ok(new
+        {
+            diagram,
+            diagramId = tempDiagram?.Id
+        });
     }
 
     [HttpPost("usecasespec")]

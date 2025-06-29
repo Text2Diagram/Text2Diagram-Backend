@@ -105,6 +105,9 @@ builder.Services.AddScoped<RejoinPointIdentifier>();
 
 builder.Services.AddScoped<RegenerateFlowchartDiagramAgent>();
 
+
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

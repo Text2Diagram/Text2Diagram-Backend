@@ -76,7 +76,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                 {
                     foreach (var assoc in package.Associations)
                     {
-                        puml.AppendLine($"{EscapePlantUmlString(assoc.Actor)} --> ({assoc.UseCase})");
+                        puml.AppendLine($"{Helpers.NormalizeActorName(EscapePlantUmlString(assoc.Actor))} --> ({assoc.UseCase})");
                     }
                     puml.AppendLine();
                 }

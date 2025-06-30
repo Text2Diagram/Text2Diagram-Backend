@@ -26,5 +26,10 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram
             return jsonNode;
 
         }
+
+        public static string NormalizeActorName(string actorName)
+        {
+            return string.Join('_', actorName.Split(' '));
+        }
     }
 }

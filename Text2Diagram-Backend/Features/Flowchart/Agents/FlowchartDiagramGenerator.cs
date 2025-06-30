@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
@@ -16,6 +17,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private readonly DecisionNodeInserter _decisionNodeInserter;
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
     private readonly ApplicationDbContext _dbContext;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
@@ -23,7 +25,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
         RejoinPointIdentifier rejoinPointIdentifier,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
         _llmService = llmService;
@@ -31,6 +34,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _decisionNodeInserter = decisionNodeInserter;
         _rejoinPointIdentifier = rejoinPointIdentifier;
         _dbContext = dbContext;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<string> GenerateAsync(string input)
@@ -50,11 +54,16 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 WriteIndented = true
             });
             _logger.LogInformation("{JsonString}", jsonString);
-            _dbContext.TempDiagrams.Add(new TempDiagram()
+
+            var userId = _httpContextAccessor?.HttpContext?.User.GetUserId();
+            var tempDiagram = new TempDiagram()
             {
                 DiagramData = jsonString,
-                DiagramType = DiagramType.Flowchart
-            });
+                DiagramType = DiagramType.Flowchart,
+                CreatedAt = DateTime.UtcNow,
+                UserId = userId ?? throw new ArgumentNullException(nameof(userId))
+            };
+            _dbContext.TempDiagrams.Add(tempDiagram);
 
             await _dbContext.SaveChangesAsync();
 

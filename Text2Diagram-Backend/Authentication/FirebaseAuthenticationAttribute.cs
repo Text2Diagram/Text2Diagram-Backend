@@ -72,4 +72,4 @@ namespace Text2Diagram_Backend.Authentication
             }
         }
     }
-} 
+}

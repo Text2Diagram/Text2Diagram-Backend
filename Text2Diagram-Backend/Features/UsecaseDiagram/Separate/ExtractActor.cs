@@ -18,7 +18,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
             +
             """
                 ### INSTRUCTIONS:
-                - Actors are typically external to the system and interact by initiating or receiving actions.
+                - Actors are typically external to the system and interact by initiating or receiving actions. If actor has multiple words, using underscores between each word (e.g., "Online Shopper", "Restaurant Receptionist").
                 - Common actor types include users, roles, departments, or integrated systems.
                 - Do **not** include internal system components or features as actors.
                 - Group similar users under generalized role names when appropriate (e.g., "Customer", "Doctor").

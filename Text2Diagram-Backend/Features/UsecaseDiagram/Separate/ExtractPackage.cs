@@ -16,7 +16,7 @@
                 - **Extends** (optional or conditional use cases),
 
                 Group the related elements into packages (a.k.a. boundaries). Each package should contain:
-                - a name that reflects the functionality area (e.g. "User Management", "Payments"),
+                - a name that reflects the functionality area (e.g. "User_Management", "Payments"),
                 - a list of Actors,
                 - a list of UseCases,
                 - Associations between the two,
@@ -28,9 +28,10 @@
                 + """
                 ### INSTRUCTIONS:
                 - A package should group related use cases and their associated actors.
+                - All names (package name, actor name, use case name) must use **Pascal_Snake_Case**, meaning words are separated by `_` and each word is **capitalized** (e.g., `Register_For_Course`).
                 - Include/Extend relationships should stay inside the package if both base and target are in the same area; otherwise, keep them in the most relevant package.
                 - Try to minimize duplication across packages.
-                - Package names should be descriptive and relevant (e.g., “Appointment Management”, “Authentication”).
+                - Package names should be descriptive and relevant and follow the Pascal_Snake_Case format. (e.g., “Appointment_Management”, “Authentication”).
 
                 ### FORMAT:
                 Return the result as valid JSON like below:
@@ -88,34 +89,47 @@
                   "Extends": [
                     { "BaseUseCase": "Send Message", "ExtendedUseCase": "Receive Notification" }
                   ]
-                }
+                }               
                 OUTPUT:
                 ```json
                 {
                   "Packages": [
                     {
-                      "Name": "Online Bookstore System",
+                      "Name": "Patient_Services",
                       "Actors": [
-                        { "Name": "Customer" },
-                        { "Name": "Administrator" }
+                        { "Name": "Patient" }
                       ],
                       "UseCases": [
-                        { "Name": "Search for Books"},
-                        { "Name": "Place Order"},
-                        { "Name": "Process Payment"},
-                        { "Name": "Manage Inventory"}
+                        { "Name": "Register" }
                       ],
                       "Associations": [
-                        { "Actor": "Customer", "UseCase": "Search for Books" },
-                        { "Actor": "Customer", "UseCase": "Place Order" },
-                        { "Actor": "Administrator", "UseCase": "Manage Inventory" }
+                        { "Actor": "Patient", "UseCase": "Register" }
                       ],
                       "Includes": [
-                         { "BaseUseCase": "Place Order", "IncludedUseCase": "Process Payment" }
+                        { "BaseUseCase": "Register", "IncludedUseCase": "Enter_Patient_Information" }
                       ],
-                      "Extends": [],
+                      "Extends": []
+                    },
+                    {
+                      "Name": "Clinical_Operations",
+                      "Actors": [
+                        { "Name": "Doctor" }
+                      ],
+                      "UseCases": [
+                        { "Name": "Issue_Prescription" },
+                        { "Name": "Send_Message" },
+                        { "Name": "Receive_Notification" }
+                      ],
+                      "Associations": [
+                        { "Actor": "Doctor", "UseCase": "Issue_Prescription" },
+                        { "Actor": "Doctor", "UseCase": "Send_Message" }
+                      ],
+                      "Includes": [],
+                      "Extends": [
+                        { "BaseUseCase": "Send_Message", "ExtendedUseCase": "Receive_Notification" }
+                      ]
                     }
-                  ],
+                  ]
                 }
                 ```
                 """;

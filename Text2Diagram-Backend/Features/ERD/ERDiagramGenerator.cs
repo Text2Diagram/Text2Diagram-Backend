@@ -63,8 +63,8 @@ public class ERDiagramGenerator : IDiagramGenerator
 
         foreach (var relation in diagram.Relationships)
         {
-            string sourceConnector = GetEdgeConnector(relation.SourceRelationshipType, true);
-            string destConnector = GetEdgeConnector(relation.DestinationRelationshipType, false);
+            string sourceConnector = GetEdgeConnector(relation.DestinationRelationshipType, true);
+            string destConnector = GetEdgeConnector(relation.SourceRelationshipType, false);
             mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
         }
 

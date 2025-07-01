@@ -1,5 +1,8 @@
-﻿using System.Text.Json;
+﻿using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics;
+using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
@@ -7,11 +10,15 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 public class RejoinPointIdentifier
 {
     private readonly ILLMService _llmService;
+    private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<RejoinPointIdentifier> _logger;
 
-    public RejoinPointIdentifier(ILLMService llmService, ILogger<RejoinPointIdentifier> logger)
+    public RejoinPointIdentifier(ILLMService llmService,
+        IHubContext<ThoughtProcessHub> hubContext,
+                                 ILogger<RejoinPointIdentifier> logger)
     {
         _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+        _hubContext = hubContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -27,6 +34,9 @@ public class RejoinPointIdentifier
             [.. f.Nodes],
             [.. f.Edges]
         )).ToList();
+
+        var sw = Stopwatch.StartNew();
+        await _hubContext.Clients.All.SendAsync("DeterminerRejoinPointsStep", "Determining rejoin points...");
 
         foreach (var subFlow in subFlows)
         {
@@ -128,6 +138,9 @@ public class RejoinPointIdentifier
                 }
             }
         }
+
+        sw.Stop();
+        await _hubContext.Clients.All.SendAsync("DeterminerRejoinPointsStepDone", sw.ElapsedMilliseconds);
 
         return modifiedFlows;
     }

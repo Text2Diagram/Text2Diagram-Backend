@@ -1,19 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
+using Newtonsoft.Json.Serialization;
+using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
-using Text2Diagram_Backend.Features.Flowchart;
-using Text2Diagram_Backend.Services;
 using Text2Diagram_Backend.Features.ERD;
-using Newtonsoft.Json.Serialization;
-using Text2Diagram_Backend.HttpHandlers;
-using Text2Diagram_Backend.Authentication;
-using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
-using Text2Diagram_Backend.LLMGeminiService;
 using Text2Diagram_Backend.Features.Sequence;
+using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.HttpHandlers;
+using Text2Diagram_Backend.LLMGeminiService;
+using Text2Diagram_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -155,6 +156,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 app.UseCors();
@@ -175,5 +178,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<ThoughtProcessHub>("/hubs/thought");
 
 app.Run();

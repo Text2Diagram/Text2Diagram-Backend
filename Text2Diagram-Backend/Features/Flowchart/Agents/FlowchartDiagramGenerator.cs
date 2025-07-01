@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart.Components;
@@ -18,6 +21,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
     private readonly ApplicationDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHubContext<ThoughtProcessHub> _hubContext;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
@@ -26,7 +30,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         DecisionNodeInserter decisionNodeInserter,
         RejoinPointIdentifier rejoinPointIdentifier,
         ApplicationDbContext dbContext,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IHubContext<ThoughtProcessHub> hubContext)
     {
         _logger = logger;
         _llmService = llmService;
@@ -35,15 +40,23 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _rejoinPointIdentifier = rejoinPointIdentifier;
         _dbContext = dbContext;
         _httpContextAccessor = httpContextAccessor;
+        _hubContext = hubContext;
     }
 
     public async Task<string> GenerateAsync(string input)
     {
         try
         {
+            var sw = Stopwatch.StartNew();
+            await _hubContext.Clients.All.SendAsync("GetDomainStep", "Determining business domain...");
             var useCaseDomain = await _analyzer.GetDomainAsync(input);
             _logger.LogInformation("Use case domain: {0}", useCaseDomain);
+            sw.Stop();
+            await _hubContext.Clients.All.SendAsync("GetDomainStepDone", sw.ElapsedMilliseconds);
+
+
             var flows = await _analyzer.AnalyzeAsync(input);
+
             var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
             modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
 
@@ -66,6 +79,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             _dbContext.TempDiagrams.Add(tempDiagram);
 
             await _dbContext.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("GenerateDiagramStep", "Generating flowchart...");
 
             string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
             return mermaidCode;

@@ -18,7 +18,7 @@ public class ERDiagramGenerator : IDiagramGenerator
         this.analyzer = analyzer;
     }
 
-    public async Task<string> GenerateAsync(string input)
+    public async Task<object> GenerateAsync(string input)
     {
         try
         {
@@ -30,7 +30,11 @@ public class ERDiagramGenerator : IDiagramGenerator
 
             logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
 
-            return mermaidCode;
+            return new
+            {
+                mermaidCode = mermaidCode,
+				diagramJson = diagram
+			};
         }
         catch (Exception ex)
         {
@@ -39,12 +43,17 @@ public class ERDiagramGenerator : IDiagramGenerator
         }
     }
 
-    /// <summary>
-    /// Generates Mermaid.js compatible syntax for the ER diagram.
-    /// </summary>
-    /// <param name="diagram">The ER diagram object containing entities and relationships</param>
-    /// <returns>A string containing Mermaid.js ER diagram syntax</returns>
-    private string GenerateMermaidCode(ERDiagram diagram)
+	public async Task<object> ReGenerateAsync(string feedback, string diagramJson)
+	{
+		return "";
+	}
+
+	/// <summary>
+	/// Generates Mermaid.js compatible syntax for the ER diagram.
+	/// </summary>
+	/// <param name="diagram">The ER diagram object containing entities and relationships</param>
+	/// <returns>A string containing Mermaid.js ER diagram syntax</returns>
+	private string GenerateMermaidCode(ERDiagram diagram)
     {
         var mermaid = new StringBuilder();
 

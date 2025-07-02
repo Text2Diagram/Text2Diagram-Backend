@@ -2,5 +2,6 @@
 
 public interface IDiagramGenerator
 {
-    Task<string> GenerateAsync(string input);
+    Task<object> GenerateAsync(string input);
+    Task<object> ReGenerateAsync(string feedback, string diagramJson);
 }

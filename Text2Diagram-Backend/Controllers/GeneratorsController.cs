@@ -114,14 +114,10 @@ public class GeneratorsController : ControllerBase
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
         var diagram = await diagramGenerator.GenerateAsync(input);
 
-        var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
+        //var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
+        //    .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
 
-        return Ok(new
-        {
-            diagram,
-            diagramId = tempDiagram?.Id
-        });
+        return Ok(diagram);
     }
 
     [HttpPost("usecasespec")]

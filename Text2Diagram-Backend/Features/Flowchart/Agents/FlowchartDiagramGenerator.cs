@@ -43,7 +43,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _hubContext = hubContext;
     }
 
-    public async Task<string> GenerateAsync(string input)
+    public async Task<object> GenerateAsync(string input)
     {
         try
         {
@@ -92,7 +92,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
     }
 
-    public async Task<string> GenerateMermaidCodeAsync(FlowchartDiagram flowchart)
+    public async Task<object> ReGenerateAsync(string feedback, string diagramJson)
+    {
+		return "";
+    }
+
+	public async Task<string> GenerateMermaidCodeAsync(FlowchartDiagram flowchart)
     {
         var mermaid = new StringBuilder();
         mermaid.AppendLine("graph TD");

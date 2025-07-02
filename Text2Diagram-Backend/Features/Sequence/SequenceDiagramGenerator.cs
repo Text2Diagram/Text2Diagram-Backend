@@ -21,7 +21,7 @@ public class SequenceDiagramGenerator : IDiagramGenerator
         this.analyzer = analyzer;
     }
 
-    public async Task<string> GenerateAsync(string input)
+    public async Task<object> GenerateAsync(string input)
     {
         try
         {
@@ -35,8 +35,12 @@ public class SequenceDiagramGenerator : IDiagramGenerator
             throw;
         }
     }
+	public async Task<object> ReGenerateAsync(string feedback, string diagramJson)
+	{
+		return "";
+	}
 
-    private string GenerateMermaidCode(SequenceDiagram diagram, bool isNested)
+	private string GenerateMermaidCode(SequenceDiagram diagram, bool isNested)
     {
         var sb = new StringBuilder();
         if (!isNested)

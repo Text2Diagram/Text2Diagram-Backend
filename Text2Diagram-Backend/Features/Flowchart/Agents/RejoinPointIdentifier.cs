@@ -36,7 +36,7 @@ public class RejoinPointIdentifier
         )).ToList();
 
         var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.All.SendAsync("DeterminerRejoinPointsStep", "Determining rejoin points...");
+        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determining rejoin points...");
 
         foreach (var subFlow in subFlows)
         {
@@ -140,7 +140,7 @@ public class RejoinPointIdentifier
         }
 
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("DeterminerRejoinPointsStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         return modifiedFlows;
     }

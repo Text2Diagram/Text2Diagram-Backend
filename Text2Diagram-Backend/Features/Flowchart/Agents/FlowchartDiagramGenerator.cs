@@ -48,11 +48,11 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         try
         {
             var sw = Stopwatch.StartNew();
-            await _hubContext.Clients.All.SendAsync("GetDomainStep", "Determining business domain...");
+            await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determining business domain...");
             var useCaseDomain = await _analyzer.GetDomainAsync(input);
             _logger.LogInformation("Use case domain: {0}", useCaseDomain);
             sw.Stop();
-            await _hubContext.Clients.All.SendAsync("GetDomainStepDone", sw.ElapsedMilliseconds);
+            await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
 
             var flows = await _analyzer.AnalyzeAsync(input);
@@ -80,7 +80,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
             await _dbContext.SaveChangesAsync();
 
-            await _hubContext.Clients.All.SendAsync("GenerateDiagramStep", "Generating flowchart...");
+            await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Generating flowchart...");
 
             string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
             return mermaidCode;

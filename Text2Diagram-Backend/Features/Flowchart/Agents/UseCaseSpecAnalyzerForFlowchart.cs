@@ -36,11 +36,11 @@ public class UseCaseSpecAnalyzerForFlowchart
     public async Task<List<Flow>> AnalyzeAsync(string useCaseSpec)
     {
         var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.All.SendAsync("CategorizeFlowsStep", "Extracting flows description from use case specification...");
+        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Extracting flows description from use case specification...");
         var (basicFlowDescription, alternativeFlowsDescription, exceptionFlowsDescription) = await _flowCategorizer.CategorizeFlowsAsync(useCaseSpec);
 
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("CategorizeFlowsStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         var flowExtractTasks = new List<Task<Flow>>
         {
@@ -58,10 +58,10 @@ public class UseCaseSpecAnalyzerForFlowchart
 
 
         sw = Stopwatch.StartNew();
-        await _hubContext.Clients.All.SendAsync("ExtractFlowsStep", "Extracting Flows [The extraction of basic, alternative, and exception flows is executed in parallel]...");
+        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Extracting Flows [The extraction of basic, alternative, and exception flows is executed in parallel]...");
         var result = await Task.WhenAll(flowExtractTasks);
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("ExtractFlowsStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
         return result.ToList();
     }
 

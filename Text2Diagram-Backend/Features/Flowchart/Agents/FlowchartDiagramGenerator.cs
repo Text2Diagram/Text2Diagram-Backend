@@ -48,13 +48,9 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         try
         {
-            var sw = Stopwatch.StartNew();
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Determining business domain...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining business domain...");
             var useCaseDomain = await _analyzer.GetDomainAsync(input);
             _logger.LogInformation("Use case domain: {0}", useCaseDomain);
-            sw.Stop();
-            await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
-
 
             var flows = await _analyzer.AnalyzeAsync(input);
 
@@ -81,7 +77,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
             await _dbContext.SaveChangesAsync();
 
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Generating flowchart...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart...");
 
             string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
             return new DiagramContent
@@ -99,10 +95,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
     public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
     {
-		return new DiagramContent();
+        return new DiagramContent();
     }
 
-	public async Task<string> GenerateMermaidCodeAsync(FlowchartDiagram flowchart)
+    public async Task<string> GenerateMermaidCodeAsync(FlowchartDiagram flowchart)
     {
         var mermaid = new StringBuilder();
         mermaid.AppendLine("graph TD");

@@ -1,20 +1,13 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 var connection = new HubConnectionBuilder()
     .WithUrl("https://localhost:7200/hubs/thought")
     .Build();
 
 // Handle events
-connection.On<string>("FlowchartStepStart", (step) =>
+connection.On<object>("StepGenerated", (data) =>
 {
-    Console.WriteLine($"Step received: {step}");
-});
-
-connection.On<int>("FlowchartStepDone", (time) =>
-{
-    Console.WriteLine($"Completed in: {time}ms");
+    Console.WriteLine($"Step received: {data}");
 });
 
 // Start connection

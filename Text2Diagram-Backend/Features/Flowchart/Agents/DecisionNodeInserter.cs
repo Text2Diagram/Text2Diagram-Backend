@@ -39,8 +39,7 @@ public class DecisionNodeInserter
             [.. basicFlow.Edges]
         );
 
-        var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Determine insertion points...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determine insertion points...");
 
         foreach (var subflow in subflows)
         {
@@ -110,9 +109,6 @@ public class DecisionNodeInserter
             _logger.LogInformation("Inserted decision node {DecisionNodeId} for subflow {SubflowName}, to {TargetId} from {InsertionNodeId}.",
                 decisionNodeId, subflow.Name, targetId, insertionNodeId);
         }
-
-        sw.Stop();
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         var result = new List<Flow> { modifiedBasicFlow };
         result.AddRange(subflows);

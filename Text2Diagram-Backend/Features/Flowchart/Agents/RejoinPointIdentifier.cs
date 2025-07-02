@@ -36,8 +36,7 @@ public class RejoinPointIdentifier
             [.. f.Edges]
         )).ToList();
 
-        var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Determining rejoin points...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining rejoin points...");
 
         foreach (var subFlow in subFlows)
         {
@@ -139,9 +138,6 @@ public class RejoinPointIdentifier
                 }
             }
         }
-
-        sw.Stop();
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         return modifiedFlows;
     }

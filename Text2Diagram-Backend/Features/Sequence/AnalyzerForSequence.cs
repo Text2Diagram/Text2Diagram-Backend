@@ -12,6 +12,7 @@ using Text2Diagram_Backend.Features.Sequence.NewWay.Objects;
 using DocumentFormat.OpenXml.VariantTypes;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Helper;
+using Text2Diagram_Backend.Features.Sequence.Agent;
 
 namespace Text2Diagram_Backend.Features.Sequence;
 
@@ -109,6 +110,26 @@ public class AnalyzerForSequence
                 logger.LogError(ex, "Attempt {attempt}: Unexpected error", attempt);
             }
         }
+        return "";
+    }
+
+
+    public async Task<string> AnalyzeForRegenAsync(string feedback, string digramJson)
+    {
+        try
+        {
+			var promt = PromtForRegenSequence.GetPromtForRegenSequence(feedback, digramJson);
+			//chatHistory.AddUserMessage(promtCombineFlow);
+			var res = await _llmService.GenerateContentAsync(promt);
+			var textContent = res.Content ?? "";
+			// Extract JSON from the response
+			var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+			return StripMermaidFences(final);
+		}
+        catch (Exception e)
+        {
+			logger.LogError(e.Message, "Attempt {attempt}: Unexpected error");
+		}
         return "";
     }
 

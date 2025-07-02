@@ -6,16 +6,13 @@
         {
             return @"
 You are a professional software architect assisting in building a structured Entity Relationship Diagram (ERD) from software requirements.
-
 In the previous step, the following Entities were identified:
 ### Entities:"
 + entities + @"
 Now, based on the input text below, your task is to analyze and extract a list of **Properties (fields/attributes)** for each of these entities.
 " + input + @"
 ---
-
 🧠 **Rules for Property Extraction**:
-
 1. Identify all meaningful attributes that belong to each Entity based on the context.
 2. Use domain knowledge to infer fields that are likely required even if they are implied (e.g., an `ENROLLMENT` likely has `student_id`, `course_id`, etc.).
 3. Each Property should follow this structure:

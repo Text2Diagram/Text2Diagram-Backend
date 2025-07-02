@@ -8,6 +8,7 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
+using Text2Diagram_Backend.Migrations;
 
 namespace Text2Diagram_Backend.Controllers;
 
@@ -18,10 +19,11 @@ public record GenerateDiagramRequest(
 
 public record RegenerateDiagramRequest(
     string Feedback,
-    Guid DiagramId
+    string diagramJson,
+    string diagramType
 );
 
-[FirebaseAuthentication]
+//[FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
 public class GeneratorsController : ControllerBase
@@ -113,15 +115,12 @@ public class GeneratorsController : ControllerBase
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
         var diagram = await diagramGenerator.GenerateAsync(input);
+        string x = "";
 
-        var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
-            .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
+        //var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
+        //    .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
 
-        return Ok(new
-        {
-            diagram,
-            diagramId = tempDiagram?.Id
-        });
+        return Ok(diagram);
     }
 
     [HttpPost("usecasespec")]
@@ -134,21 +133,28 @@ public class GeneratorsController : ControllerBase
     [HttpPost("regenerate")]
     public async Task<IActionResult> RegenerateDiagram([FromForm] RegenerateDiagramRequest request)
     {
-        var diagram = await _dbContext.TempDiagrams.FirstOrDefaultAsync(d => d.Id == request.DiagramId);
+        //var diagram = await _dbContext.TempDiagrams.FirstOrDefaultAsync(d => d.Id == request.DiagramId);
 
-        if (diagram == null)
-        {
-            return NotFound($"Diagram with id {request.DiagramId} not found.");
-        }
+        //if (diagram == null)
+        //{
+        //    return NotFound($"Diagram with id {request.DiagramId} not found.");
+        //}
 
-        string result = string.Empty;
+        //string result = string.Empty;
 
-        if (diagram.DiagramType == DiagramType.Flowchart)
-        {
+        //if (diagram.DiagramType == DiagramType.Flowchart)
+        //{
 
-            result = await _regenerateFlowchartDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
-        }
+        //    result = await _regenerateFlowchartDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
+        //}
 
-        return Ok(result);
+        DiagramType diagramType;
+		if (!Enum.TryParse(request.diagramType, true, out diagramType))
+		{
+			return BadRequest("Invalid diagram type.");
+		}
+		var diagramGenerator = generatorFactory.GetGenerator(diagramType);
+		var result = await diagramGenerator.ReGenerateAsync(request.Feedback, request.diagramJson);
+		return Ok(result);
     }
 }

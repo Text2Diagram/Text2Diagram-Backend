@@ -1,5 +1,8 @@
-﻿using System.Text.Json;
+﻿using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics;
+using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
@@ -7,11 +10,16 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 public class DecisionNodeInserter
 {
     private readonly ILLMService _llmService;
+    private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<DecisionNodeInserter> _logger;
 
-    public DecisionNodeInserter(ILLMService llmService, ILogger<DecisionNodeInserter> logger)
+    public DecisionNodeInserter(
+        ILLMService llmService,
+        IHubContext<ThoughtProcessHub> hubContext,
+        ILogger<DecisionNodeInserter> logger)
     {
         _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+        _hubContext = hubContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -29,6 +37,9 @@ public class DecisionNodeInserter
             [.. basicFlow.Nodes],
             [.. basicFlow.Edges]
         );
+
+        var sw = Stopwatch.StartNew();
+        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determine insertion points...");
 
         foreach (var subflow in subflows)
         {
@@ -98,6 +109,9 @@ public class DecisionNodeInserter
             _logger.LogInformation("Inserted decision node {DecisionNodeId} for subflow {SubflowName}, to {TargetId} from {InsertionNodeId}.",
                 decisionNodeId, subflow.Name, targetId, insertionNodeId);
         }
+
+        sw.Stop();
+        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         var result = new List<Flow> { modifiedBasicFlow };
         result.AddRange(subflows);

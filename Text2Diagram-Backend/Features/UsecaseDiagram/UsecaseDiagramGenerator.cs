@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
@@ -23,7 +24,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
     /// <param name="input">Use case specifications or BPMN files.</param>
     /// <returns>Generated Mermaid Code for Flowchart Diagram</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public async Task<string> GenerateAsync(string input)
+    public async Task<DiagramContent> GenerateAsync(string input)
     {
         try
         {
@@ -36,7 +37,11 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
             logger.LogInformation("Generated PlanUML Code:\n{PlantUMLCode}", planUMLCode);
 
             // Validate and correct if needed
-            return planUMLCode;
+            return new DiagramContent
+            {
+                mermaidCode = planUMLCode,
+                diagramJson = JsonConvert.SerializeObject(diagram)
+            };
         }
         catch (Exception ex)
         {
@@ -45,7 +50,12 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         }
     }
 
-    private string GeneratePlantUMLCode(UseCaseDiagram diagram)
+	public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
+	{
+        return new DiagramContent();
+	}
+
+	private string GeneratePlantUMLCode(UseCaseDiagram diagram)
     {
         var puml = new StringBuilder();
 
@@ -76,7 +86,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                 {
                     foreach (var assoc in package.Associations)
                     {
-                        puml.AppendLine($"{EscapePlantUmlString(assoc.Actor)} --> ({assoc.UseCase})");
+                        puml.AppendLine($"{Helpers.NormalizeActorName(EscapePlantUmlString(assoc.Actor))} --> ({assoc.UseCase})");
                     }
                     puml.AppendLine();
                 }

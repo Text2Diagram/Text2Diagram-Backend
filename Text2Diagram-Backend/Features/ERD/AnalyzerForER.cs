@@ -1,4 +1,6 @@
-﻿using Microsoft.SemanticKernel;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.AI;
+using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Newtonsoft.Json;
 using System.Linq;
@@ -97,6 +99,17 @@ public class AnalyzerForER
         throw new FormatException($"Could not generate a valid ER diagram after {MaxRetries} attempts.");
     }
 
+
+    public async Task<ERDiagram> AnalyzeForReGenAsync(string feedback, string diagramJson)
+    {
+		string promtRegenForEr = PromtForRegenER.GetPromtForRegenER(feedback, diagramJson);
+		var res = await _llmService.GenerateContentAsync(promtRegenForEr);
+		string textContent = res.Content ?? "";
+		var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+        // Deserialize JSON to ERDiagram
+        var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);
+        return target[0];
+	}
     /// <summary>
     /// Generates a prompt for the LLM to extract ER diagram elements from a domain description.
     /// </summary>

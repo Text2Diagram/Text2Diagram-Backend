@@ -6,33 +6,25 @@
 		{
 			return @"
 You are a software modeling assistant. Your task is to analyze the user requirements below and identify the relationships between entities in the system, including how many instances of each entity can be related to the other.
-
 ---
-
 📌 Definitions and Rules:
-
 - You are given a list of identified entities in the system.
 - For each pair of related entities, describe the **relationship directionally**: from the `SourceEntityName` to the `DestinationEntityName`.
-
 - Each relationship must include:
   - `SourceEntityName`: the entity **initiating** the relationship.
   - `DestinationEntityName`: the **target** entity.
   - `SourceRelationshipType`: the number of `DestinationEntity` instances that a **single `SourceEntity`** can relate to.
   - `DestinationRelationshipType`: the number of `SourceEntity` instances that a **single `DestinationEntity`** can relate to.
   - `Description`: a clear and short description of the relationship in natural language.
-
 - Valid values for relationship types:
   - `""ZeroOrOne""` — zero or one instance
   - `""ExactlyOne""` — exactly one instance
   - `""ZeroOrMore""` — zero or many instances
   - `""OneOrMore""` — one or many instances
-
 - Do NOT include relationships unless clearly stated or logically inferred.
 - Only use entity names from the list provided.
 - Avoid duplicate or reversed versions of the same relationship.
-
 ---
-
 🧱 Entity List:
 "+ entity + @"
 ---

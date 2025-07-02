@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Sequence.Components;
+using Text2Diagram_Backend.Migrations;
 
 namespace Text2Diagram_Backend.Features.Sequence;
 
@@ -21,13 +22,17 @@ public class SequenceDiagramGenerator : IDiagramGenerator
         this.analyzer = analyzer;
     }
 
-    public async Task<string> GenerateAsync(string input)
+    public async Task<DiagramContent> GenerateAsync(string input)
     {
         try
         {
             // Extract and generate diagram structure directly from input
             var diagram = await analyzer.AnalyzeAsync(input);
-            return diagram;
+            return new DiagramContent
+            {
+                mermaidCode = diagram,
+                diagramJson = diagram
+            };
         }
         catch (Exception ex)
         {
@@ -35,8 +40,26 @@ public class SequenceDiagramGenerator : IDiagramGenerator
             throw;
         }
     }
+	public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
+	{
+		try
+		{
+			// Extract and generate diagram structure directly from input
+			var diagram = await analyzer.AnalyzeForRegenAsync(feedback, diagramJson);
+			return new DiagramContent
+			{
+				mermaidCode = diagram,
+				diagramJson = diagram
+			};
+		}
+		catch (Exception ex)
+		{
+			logger.LogError(ex, "Error generating flowchart diagram");
+			throw;
+		}
+	}
 
-    private string GenerateMermaidCode(SequenceDiagram diagram, bool isNested)
+	private string GenerateMermaidCode(SequenceDiagram diagram, bool isNested)
     {
         var sb = new StringBuilder();
         if (!isNested)

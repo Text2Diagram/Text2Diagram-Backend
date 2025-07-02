@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Diagnostics;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -40,7 +41,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         var (basicFlowDescription, alternativeFlowsDescription, exceptionFlowsDescription) = await _flowCategorizer.CategorizeFlowsAsync(useCaseSpec);
 
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         var flowExtractTasks = new List<Task<Flow>>
         {
@@ -61,7 +62,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Extracting Flows [The extraction of basic, alternative, and exception flows is executed in parallel]...");
         var result = await Task.WhenAll(flowExtractTasks);
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
         return result.ToList();
     }
 

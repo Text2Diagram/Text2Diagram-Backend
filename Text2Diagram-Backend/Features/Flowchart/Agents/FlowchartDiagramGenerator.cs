@@ -9,6 +9,7 @@ using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -48,7 +49,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         try
         {
             var sw = Stopwatch.StartNew();
-            await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determining business domain...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Determining business domain...");
             var useCaseDomain = await _analyzer.GetDomainAsync(input);
             _logger.LogInformation("Use case domain: {0}", useCaseDomain);
             sw.Stop();
@@ -80,7 +81,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
             await _dbContext.SaveChangesAsync();
 
-            await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Generating flowchart...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Generating flowchart...");
 
             string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
             return mermaidCode;

@@ -14,6 +14,7 @@ using Text2Diagram_Backend.Features.Sequence;
 using Text2Diagram_Backend.Features.UsecaseDiagram;
 using Text2Diagram_Backend.HttpHandlers;
 using Text2Diagram_Backend.LLMGeminiService;
+using Text2Diagram_Backend.Middlewares;
 using Text2Diagram_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -176,6 +177,8 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseMiddleware<SignalRContextMiddleware>();
 
 app.MapControllers();
 

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -36,7 +37,7 @@ public class RejoinPointIdentifier
         )).ToList();
 
         var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determining rejoin points...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Determining rejoin points...");
 
         foreach (var subFlow in subFlows)
         {
@@ -140,7 +141,7 @@ public class RejoinPointIdentifier
         }
 
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         return modifiedFlows;
     }

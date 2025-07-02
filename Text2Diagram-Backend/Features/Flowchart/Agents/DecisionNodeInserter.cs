@@ -4,6 +4,7 @@ using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -39,7 +40,7 @@ public class DecisionNodeInserter
         );
 
         var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determine insertion points...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepStart", "Determine insertion points...");
 
         foreach (var subflow in subflows)
         {
@@ -111,7 +112,7 @@ public class DecisionNodeInserter
         }
 
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         var result = new List<Flow> { modifiedBasicFlow };
         result.AddRange(subflows);

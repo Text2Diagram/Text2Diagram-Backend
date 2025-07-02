@@ -39,7 +39,7 @@ public class DecisionNodeInserter
         );
 
         var sw = Stopwatch.StartNew();
-        await _hubContext.Clients.All.SendAsync("DetermineInsertionPointsStep", "Determine insertion points...");
+        await _hubContext.Clients.All.SendAsync("FlowchartStepStart", "Determine insertion points...");
 
         foreach (var subflow in subflows)
         {
@@ -111,7 +111,7 @@ public class DecisionNodeInserter
         }
 
         sw.Stop();
-        await _hubContext.Clients.All.SendAsync("DetermineInsertionPointsStepDone", sw.ElapsedMilliseconds);
+        await _hubContext.Clients.All.SendAsync("FlowchartStepDone", sw.ElapsedMilliseconds);
 
         var result = new List<Flow> { modifiedBasicFlow };
         result.AddRange(subflows);

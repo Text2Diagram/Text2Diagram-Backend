@@ -153,7 +153,7 @@ public class GeneratorsController : ControllerBase
 
 
 
-        return Ok(result);
+        //return Ok(result);
         DiagramType diagramType;
 		if (!Enum.TryParse(request.diagramType, true, out diagramType))
 		{

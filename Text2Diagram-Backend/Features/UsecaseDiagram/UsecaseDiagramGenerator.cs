@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.Text;
 using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
@@ -35,17 +36,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         try
         {
             // Extract and generate diagram structure directly from input
-            var diagram = await analyzer.AnalyzeAsync(input);
-            string jsonString = JsonSerializer.Serialize(diagram, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-            logger.LogInformation("{JsonString}", jsonString);
-            dbContext.TempDiagrams.Add(new TempDiagram()
-            {
-                DiagramData = jsonString,
-                DiagramType = DiagramType.UseCase
-            });
+            var diagram = await analyzer.AnalyzeAsync(input);            // Generate Mermaid syntax
             // Generate Mermaid syntax
             string planUMLCode = GeneratePlantUMLCode(diagram);
 

@@ -11,6 +11,8 @@ using Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc;
 using Text2Diagram_Backend.Features.Sequence.NewWay.Objects;
 using DocumentFormat.OpenXml.VariantTypes;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Features.Helper;
+using Text2Diagram_Backend.Features.Sequence.Agent;
 
 namespace Text2Diagram_Backend.Features.Sequence;
 
@@ -54,7 +56,7 @@ public class AnalyzerForSequence
 				//var responseGetFlowInStep1 = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                 var textGetFlow = responseGetFlowInStep1.Content ?? "";
                 // Extract JSON from the response
-                var finalGetFlow = ExtractJsonFromText(textGetFlow);
+                var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
                 var listUseCaseInGetFlow = DeserializeLLMResponseFunc.DeserializeLLMResponse<UseCaseDto>(finalGetFlow);
                 foreach (var item in listUseCaseInGetFlow)
                 {
@@ -64,7 +66,7 @@ public class AnalyzerForSequence
                     var responseCombineFlow = await _llmService.GenerateContentAsync(promtCombineFlow);
                     var textContentCombineflow = responseCombineFlow.Content ?? "";
                     // Extract JSON from the response
-                    var finalCombineFlow = ExtractJsonFromText(textContentCombineflow);
+                    var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
                     var listCombineFlow = DeserializeLLMResponseFunc.DeserializeLLMResponse<UseCaseInputDto>(finalCombineFlow);
                     //step_3 : identify participants
                     var strCombineFlow = JsonConvert.SerializeObject(listCombineFlow.FirstOrDefault());
@@ -73,7 +75,7 @@ public class AnalyzerForSequence
                     //var responseParticipants = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                     var responseParticipants = await _llmService.GenerateContentAsync(promtIdentityParticipant);
 					var textContentParticipants = responseParticipants.Content ?? "";
-                    var finalParticipants = ExtractJsonFromText(textContentParticipants);
+                    var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
                     var listParticipants = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepParticipantDto>(finalParticipants);
                     //step_4 : Identify conditions
                     var promtIdentifyConditions = Step4_IdentifyCondition.IdentifyCondition(strCombineFlow);
@@ -81,7 +83,7 @@ public class AnalyzerForSequence
                     //var responseConditions = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                     var responseConditions = await _llmService.GenerateContentAsync(promtIdentifyConditions);
                     var textContentConditions = responseConditions.Content ?? "";
-                    var finalConditions = ExtractJsonFromText(textContentConditions);
+                    var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
                     var listConditions = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepControlTypeDto>(finalConditions);
                     //step_5 : Combine LLM responses
                     var promtCombineLLMResponse = Step5_CombineLLMResult.CombineLLMResults(listCombineFlow.FirstOrDefault(), listParticipants, listConditions);
@@ -111,6 +113,26 @@ public class AnalyzerForSequence
         return "";
     }
 
+
+    public async Task<string> AnalyzeForRegenAsync(string feedback, string digramJson)
+    {
+        try
+        {
+			var promt = PromtForRegenSequence.GetPromtForRegenSequence(feedback, digramJson);
+			//chatHistory.AddUserMessage(promtCombineFlow);
+			var res = await _llmService.GenerateContentAsync(promt);
+			var textContent = res.Content ?? "";
+			// Extract JSON from the response
+			var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+			return StripMermaidFences(final);
+		}
+        catch (Exception e)
+        {
+			logger.LogError(e.Message, "Attempt {attempt}: Unexpected error");
+		}
+        return "";
+    }
+
 	public static string StripMermaidFences(string input)
 	{
 		var lines = input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
@@ -124,30 +146,6 @@ public class AnalyzerForSequence
 		return input.Trim(); // Trả nguyên nếu không match
 	}
 
-	private string ExtractJsonFromText(string textContent)
-	{
-		// Ưu tiên tìm trong code block có đánh dấu ```json
-		var codeFenceMatch = Regex.Match(textContent, @"```(?:json)?\s*([\s\S]+?)\s*```", RegexOptions.Singleline);
-		if (codeFenceMatch.Success)
-		{
-			return codeFenceMatch.Groups[1].Value.Trim();
-		}
-
-		// Nếu không có code fence, tìm JSON array hoặc object
-		var arrayMatch = Regex.Match(textContent, @"\[\s*{[\s\S]*?}\s*\]", RegexOptions.Singleline);
-		if (arrayMatch.Success)
-		{
-			return arrayMatch.Value.Trim();
-		}
-
-		var objectMatch = Regex.Match(textContent, @"{[\s\S]*}", RegexOptions.Singleline);
-		if (objectMatch.Success)
-		{
-			return objectMatch.Value.Trim();
-		}
-
-		return "";
-	}
     /// <summary>
     /// Analyzes a domain description to generate an Entity Relationship Diagram.
     /// </summary>

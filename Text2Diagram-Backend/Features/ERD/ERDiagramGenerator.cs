@@ -1,6 +1,8 @@
+using Newtonsoft.Json;
 using System.Text;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.ERD.Components;
+using Text2Diagram_Backend.Migrations;
 
 namespace Text2Diagram_Backend.Features.ERD;
 
@@ -18,7 +20,7 @@ public class ERDiagramGenerator : IDiagramGenerator
         this.analyzer = analyzer;
     }
 
-    public async Task<string> GenerateAsync(string input)
+    public async Task<DiagramContent> GenerateAsync(string input)
     {
         try
         {
@@ -30,7 +32,11 @@ public class ERDiagramGenerator : IDiagramGenerator
 
             logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
 
-            return mermaidCode;
+            return new DiagramContent
+            {
+                mermaidCode = mermaidCode,
+				diagramJson = JsonConvert.SerializeObject(diagram)
+			};
         }
         catch (Exception ex)
         {
@@ -39,12 +45,37 @@ public class ERDiagramGenerator : IDiagramGenerator
         }
     }
 
-    /// <summary>
-    /// Generates Mermaid.js compatible syntax for the ER diagram.
-    /// </summary>
-    /// <param name="diagram">The ER diagram object containing entities and relationships</param>
-    /// <returns>A string containing Mermaid.js ER diagram syntax</returns>
-    private string GenerateMermaidCode(ERDiagram diagram)
+	public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
+	{
+		try
+		{
+			// Extract and generate diagram structure directly from input
+			var diagram = await analyzer.AnalyzeForReGenAsync(feedback, diagramJson);
+
+			// Generate Mermaid syntax
+			string mermaidCode = GenerateMermaidCode(diagram);
+
+			logger.LogInformation("Generated Mermaid code:\n{mermaidCode}", mermaidCode);
+
+			return new DiagramContent
+			{
+				mermaidCode = mermaidCode,
+				diagramJson = JsonConvert.SerializeObject(diagram)
+			};
+		}
+		catch (Exception ex)
+		{
+			logger.LogError(ex, "Error generating flowchart diagram");
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Generates Mermaid.js compatible syntax for the ER diagram.
+	/// </summary>
+	/// <param name="diagram">The ER diagram object containing entities and relationships</param>
+	/// <returns>A string containing Mermaid.js ER diagram syntax</returns>
+	private string GenerateMermaidCode(ERDiagram diagram)
     {
         var mermaid = new StringBuilder();
 
@@ -63,8 +94,8 @@ public class ERDiagramGenerator : IDiagramGenerator
 
         foreach (var relation in diagram.Relationships)
         {
-            string sourceConnector = GetEdgeConnector(relation.SourceRelationshipType, true);
-            string destConnector = GetEdgeConnector(relation.DestinationRelationshipType, false);
+            string sourceConnector = GetEdgeConnector(relation.DestinationRelationshipType, true);
+            string destConnector = GetEdgeConnector(relation.SourceRelationshipType, false);
             mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
         }
 

@@ -1,17 +1,26 @@
-﻿using System.Text.Json;
+﻿using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics;
+using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class DecisionNodeInserter
 {
     private readonly ILLMService _llmService;
+    private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<DecisionNodeInserter> _logger;
 
-    public DecisionNodeInserter(ILLMService llmService, ILogger<DecisionNodeInserter> logger)
+    public DecisionNodeInserter(
+        ILLMService llmService,
+        IHubContext<ThoughtProcessHub> hubContext,
+        ILogger<DecisionNodeInserter> logger)
     {
         _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+        _hubContext = hubContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -29,6 +38,8 @@ public class DecisionNodeInserter
             [.. basicFlow.Nodes],
             [.. basicFlow.Edges]
         );
+
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determine insertion points...");
 
         foreach (var subflow in subflows)
         {

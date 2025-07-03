@@ -1,19 +1,21 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
+using Newtonsoft.Json.Serialization;
+using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Common.Implementations;
 using Text2Diagram_Backend.Data;
-using Text2Diagram_Backend.Features.Flowchart;
-using Text2Diagram_Backend.Services;
 using Text2Diagram_Backend.Features.ERD;
-using Newtonsoft.Json.Serialization;
-using Text2Diagram_Backend.HttpHandlers;
-using Text2Diagram_Backend.Authentication;
-using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
-using Text2Diagram_Backend.LLMGeminiService;
 using Text2Diagram_Backend.Features.Sequence;
+using Text2Diagram_Backend.Features.UsecaseDiagram;
+using Text2Diagram_Backend.HttpHandlers;
+using Text2Diagram_Backend.LLMGeminiService;
+using Text2Diagram_Backend.Middlewares;
+using Text2Diagram_Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -106,6 +108,9 @@ builder.Services.AddScoped<RejoinPointIdentifier>();
 builder.Services.AddScoped<RegenerateFlowchartDiagramAgent>();
 builder.Services.AddScoped<RegenerateUsecaseDiagram>();
 
+
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -147,11 +152,14 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policyBuilder =>
     {
         policyBuilder
-                .AllowAnyOrigin()
+                .WithOrigins(["http://localhost:5173"])
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
     });
 });
+
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -172,6 +180,10 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.UseMiddleware<SignalRContextMiddleware>();
+
 app.MapControllers();
+
+app.MapHub<ThoughtProcessHub>("/hubs/thought");
 
 app.Run();

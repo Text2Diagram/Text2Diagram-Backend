@@ -154,5 +154,10 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram
             }
             return model;
         }
+
+        public static string NormalizeActorName(string actorName)
+        {
+            return string.Join('_', actorName.Split(' '));
+        }
     }
 }

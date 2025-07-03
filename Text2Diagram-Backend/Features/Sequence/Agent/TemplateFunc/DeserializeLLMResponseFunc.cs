@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc
 {
@@ -11,35 +12,34 @@ namespace Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc
 
 			jsonResponse = jsonResponse.Trim();
 
+			var options = new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true,
+				Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+			};
+
 			try
 			{
 				// Nếu là array: [ ... ]
 				if (jsonResponse.StartsWith("["))
 				{
-					return JsonSerializer.Deserialize<List<T>>(jsonResponse, new JsonSerializerOptions
-					{
-						PropertyNameCaseInsensitive = true
-					}) ?? new List<T>();
+					return JsonSerializer.Deserialize<List<T>>(jsonResponse, options) ?? new List<T>();
 				}
 				// Nếu là object: { ... }
 				else if (jsonResponse.StartsWith("{"))
 				{
-					var singleItem = JsonSerializer.Deserialize<T>(jsonResponse, new JsonSerializerOptions
-					{
-						PropertyNameCaseInsensitive = true
-					});
-
+					var singleItem = JsonSerializer.Deserialize<T>(jsonResponse, options);
 					return singleItem != null ? new List<T> { singleItem } : new List<T>();
 				}
 			}
 			catch (JsonException ex)
 			{
-				// Log nếu cần
 				Console.WriteLine($"[ERROR] JSON parsing failed: {ex.Message}");
 			}
 
 			return new List<T>();
 		}
+
 	}
 
 }

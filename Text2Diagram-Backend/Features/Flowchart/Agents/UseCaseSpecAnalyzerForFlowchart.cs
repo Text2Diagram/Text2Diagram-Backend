@@ -1,4 +1,8 @@
+using Microsoft.AspNetCore.SignalR;
+using System.Diagnostics;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -9,6 +13,7 @@ public class UseCaseSpecAnalyzerForFlowchart
     private readonly AlternativeFlowExtractor _alternativeFlowExtractor;
     private readonly ExceptionFlowExtractor _exceptionFlowExtractor;
     private readonly ILLMService _llmService;
+    private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> _logger;
 
     public UseCaseSpecAnalyzerForFlowchart(
@@ -17,6 +22,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         AlternativeFlowExtractor alternativeFlowExtractor,
         ExceptionFlowExtractor exceptionFlowExtractor,
         ILLMService llmService,
+        IHubContext<ThoughtProcessHub> hubContext,
         ILogger<UseCaseSpecAnalyzerForFlowchart> logger)
     {
         _flowCategorizer = flowCategorizer;
@@ -24,11 +30,13 @@ public class UseCaseSpecAnalyzerForFlowchart
         _alternativeFlowExtractor = alternativeFlowExtractor;
         _exceptionFlowExtractor = exceptionFlowExtractor;
         _llmService = llmService;
+        _hubContext = hubContext;
         _logger = logger;
     }
 
     public async Task<List<Flow>> AnalyzeAsync(string useCaseSpec)
     {
+        await _hubContext.Clients.All.SendAsync("StepGenerated", "Extracting flows description from use case specification...");
         var (basicFlowDescription, alternativeFlowsDescription, exceptionFlowsDescription) = await _flowCategorizer.CategorizeFlowsAsync(useCaseSpec);
 
         var flowExtractTasks = new List<Task<Flow>>
@@ -45,6 +53,8 @@ public class UseCaseSpecAnalyzerForFlowchart
             flowExtractTasks.Add(_exceptionFlowExtractor.ExtractExceptionFlowAsync(exceptionFlowDescription.Description, exceptionFlowDescription.Name));
         }
 
+
+        await _hubContext.Clients.All.SendAsync("StepGenerated", "Extracting Flows [The extraction of basic, alternative, and exception flows is executed in parallel]...");
         var result = await Task.WhenAll(flowExtractTasks);
         return result.ToList();
     }

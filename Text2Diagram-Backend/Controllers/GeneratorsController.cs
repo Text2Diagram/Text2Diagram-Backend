@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
@@ -18,9 +19,11 @@ public record GenerateDiagramRequest(
 
 public record RegenerateDiagramRequest(
     string Feedback,
-    Guid DiagramId
+    string diagramJson,
+    string diagramType
 );
 
+//[FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
 public class GeneratorsController : ControllerBase
@@ -114,8 +117,13 @@ public class GeneratorsController : ControllerBase
             return BadRequest("Empty file");
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
-        var result = await diagramGenerator.GenerateAsync(input);
-        return Ok(result);
+        var diagram = await diagramGenerator.GenerateAsync(input);
+        string x = "";
+
+        //var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
+        //    .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
+
+        return Ok(diagram);
     }
 
     [HttpPost("usecasespec")]
@@ -128,30 +136,31 @@ public class GeneratorsController : ControllerBase
     [HttpPost("regenerate")]
     public async Task<IActionResult> RegenerateDiagram([FromForm] RegenerateDiagramRequest request)
     {
-        var diagram = await _dbContext.TempDiagrams.FirstOrDefaultAsync(d => d.Id == request.DiagramId);
+        //var diagram = await _dbContext.TempDiagrams.FirstOrDefaultAsync(d => d.Id == request.DiagramId);
 
-        if (diagram == null)
-        {
-            return NotFound($"Diagram with id {request.DiagramId} not found.");
-        }
+        //if (diagram == null)
+        //{
+        //    return NotFound($"Diagram with id {request.DiagramId} not found.");
+        //}
 
-        string result = string.Empty;
+        //string result = string.Empty;
 
-        if (diagram.DiagramType == DiagramType.Flowchart)
-        {
+        //if (diagram.DiagramType == DiagramType.Flowchart)
+        //{
 
-            result = await _regenerateFlowchartDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
-        }
-        else if (diagram.DiagramType == DiagramType.UseCase)
-        {
-            result = await _regenerateUsecaseDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
-        }
-        else
-        {
-            return BadRequest("Unsupported diagram type for regeneration.");
-        }
+        //    result = await _regenerateFlowchartDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
+        //}
+
 
 
         return Ok(result);
+        DiagramType diagramType;
+		if (!Enum.TryParse(request.diagramType, true, out diagramType))
+		{
+			return BadRequest("Invalid diagram type.");
+		}
+		var diagramGenerator = generatorFactory.GetGenerator(diagramType);
+		var result = await diagramGenerator.ReGenerateAsync(request.Feedback, request.diagramJson);
+		return Ok(result);
     }
 }

@@ -16,7 +16,7 @@
                 - **Extends** (optional or conditional use cases),
 
                 Group the related elements into packages (a.k.a. boundaries). Each package should contain:
-                - a name that reflects the functionality area (e.g. "User_Management", "Payments"),
+                - a name that reflects the functionality area (e.g. "User Management", "Payments"),
                 - a list of Actors,
                 - a list of UseCases,
                 - Associations between the two,

@@ -128,7 +128,13 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 errorMessage = "Deserialization returned null.";
                 logger.LogWarning(" Raw response:\n{Content}", errorMessage);
             }
-
+            foreach (var package in diagram.Packages)
+            {
+                if (package.Actors.Count == 0 || package.UseCases.Count == 0) 
+                {
+                    diagram.Packages.Remove(package);
+                }
+            }
             return diagram;
 
         }

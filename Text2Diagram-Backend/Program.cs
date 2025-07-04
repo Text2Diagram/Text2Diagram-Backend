@@ -106,6 +106,7 @@ builder.Services.AddScoped<RejoinPointIdentifier>();
 
 
 builder.Services.AddScoped<RegenerateFlowchartDiagramAgent>();
+builder.Services.AddScoped<RegenerateUsecaseDiagram>();
 
 
 builder.Services.AddHttpContextAccessor();

@@ -8,7 +8,7 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.Flowchart.Agents;
-using Text2Diagram_Backend.Migrations;
+using Text2Diagram_Backend.Features.UsecaseDiagram;
 
 namespace Text2Diagram_Backend.Controllers;
 
@@ -30,17 +30,20 @@ public class GeneratorsController : ControllerBase
 {
     private readonly IDiagramGeneratorFactory generatorFactory;
     private readonly RegenerateFlowchartDiagramAgent _regenerateFlowchartDiagramAgent;
+    private readonly RegenerateUsecaseDiagram _regenerateUsecaseDiagramAgent;
     private readonly UseCaseSpecGenerator useCaseSpecGenerator;
     private readonly ApplicationDbContext _dbContext;
 
     public GeneratorsController(
         IDiagramGeneratorFactory generatorFactory,
         RegenerateFlowchartDiagramAgent regenerateFlowchartDiagramAgent,
+        RegenerateUsecaseDiagram regenerateUsecaseDiagramAgent,
         UseCaseSpecGenerator useCaseSpecGenerator,
         ApplicationDbContext dbContext)
     {
         this.generatorFactory = generatorFactory;
         _regenerateFlowchartDiagramAgent = regenerateFlowchartDiagramAgent;
+        _regenerateUsecaseDiagramAgent = regenerateUsecaseDiagramAgent;
         this.useCaseSpecGenerator = useCaseSpecGenerator;
         _dbContext = dbContext;
     }
@@ -148,6 +151,9 @@ public class GeneratorsController : ControllerBase
         //    result = await _regenerateFlowchartDiagramAgent.RegenerateAsync(request.Feedback, diagram.DiagramData);
         //}
 
+
+
+        //return Ok(result);
         DiagramType diagramType;
         if (!Enum.TryParse(request.diagramType, true, out diagramType))
         {

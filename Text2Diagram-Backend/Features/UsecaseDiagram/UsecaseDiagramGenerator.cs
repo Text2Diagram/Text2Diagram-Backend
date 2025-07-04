@@ -1,6 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Text;
+using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Data;
+using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
@@ -9,13 +13,16 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
 {
     private readonly ILogger<UsecaseDiagramGenerator> logger;
     private readonly UseCaseSpecAnalyzerForUsecaseDiagram analyzer;
+    private readonly ApplicationDbContext dbContext;
 
     public UsecaseDiagramGenerator(
         ILogger<UsecaseDiagramGenerator> logger,
-        UseCaseSpecAnalyzerForUsecaseDiagram analyzer)
+        UseCaseSpecAnalyzerForUsecaseDiagram analyzer,
+        ApplicationDbContext dbContext)
     {
         this.logger = logger;
         this.analyzer = analyzer;
+        this.dbContext = dbContext;
     }
 
     /// <summary>
@@ -29,8 +36,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         try
         {
             // Extract and generate diagram structure directly from input
-            var diagram = await analyzer.AnalyzeAsync(input);
-
+            var diagram = await analyzer.AnalyzeAsync(input);            // Generate Mermaid syntax
             // Generate Mermaid syntax
             string planUMLCode = GeneratePlantUMLCode(diagram);
 
@@ -55,7 +61,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         return new DiagramContent();
 	}
 
-	private string GeneratePlantUMLCode(UseCaseDiagram diagram)
+    public string GeneratePlantUMLCode(UseCaseDiagram diagram)
     {
         var puml = new StringBuilder();
 

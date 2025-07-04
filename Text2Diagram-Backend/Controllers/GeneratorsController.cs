@@ -23,7 +23,7 @@ public record RegenerateDiagramRequest(
     string diagramType
 );
 
-//[FirebaseAuthentication]
+[FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
 public class GeneratorsController : ControllerBase
@@ -149,12 +149,12 @@ public class GeneratorsController : ControllerBase
         //}
 
         DiagramType diagramType;
-		if (!Enum.TryParse(request.diagramType, true, out diagramType))
-		{
-			return BadRequest("Invalid diagram type.");
-		}
-		var diagramGenerator = generatorFactory.GetGenerator(diagramType);
-		var result = await diagramGenerator.ReGenerateAsync(request.Feedback, request.diagramJson);
-		return Ok(result);
+        if (!Enum.TryParse(request.diagramType, true, out diagramType))
+        {
+            return BadRequest("Invalid diagram type.");
+        }
+        var diagramGenerator = generatorFactory.GetGenerator(diagramType);
+        var result = await diagramGenerator.ReGenerateAsync(request.Feedback, request.diagramJson);
+        return Ok(result);
     }
 }

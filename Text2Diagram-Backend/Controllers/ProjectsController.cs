@@ -5,7 +5,6 @@ using Text2Diagram_Backend.Data;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Text2Diagram_Backend.Authentication;
-using System.Diagnostics;
 
 namespace Text2Diagram_Backend.Controllers;
 

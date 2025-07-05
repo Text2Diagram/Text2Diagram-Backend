@@ -83,9 +83,27 @@ builder.Services.AddSingleton<UseCaseSpecGenerator>();
 // Add Firebase Authentication
 builder.Services.AddSingleton<FirebaseTokenVerifier>();
 
+// Add LLM Gemini Service
+builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection("Gemini"));
+builder.Services.AddScoped<GoogleServiceAccountTokenProvider>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var serviceAccountPath = configuration["Gemini:ServiceAccountJsonPath"]
+        ?? throw new ArgumentNullException("Gemini:ServiceAccountJsonPath is not configured");
+    var audience = "https://www.googleapis.com/auth/cloud-platform";
+    return new GoogleServiceAccountTokenProvider(serviceAccountPath, audience);
+});
+
+builder.Services.AddHttpClient("GeminiClient", client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(5);
+}).AddHttpMessageHandler<GoogleAuthHandler>();
+
+builder.Services.AddTransient<GoogleAuthHandler>();
+
+builder.Services.AddScoped<ILLMService, GeminiService>();
 
 builder.Services.AddSingleton<UseCaseSpecGenerator>();
-builder.Services.AddHttpClient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddScoped<FlowchartDiagramGenerator>();
 builder.Services.AddScoped<ERDiagramGenerator>();

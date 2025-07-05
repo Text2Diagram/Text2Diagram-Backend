@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+﻿using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
@@ -7,27 +7,23 @@ namespace Text2Diagram_Backend.LLMGeminiService
 {
     public class GeminiService : ILLMService
     {
+        private readonly GeminiOptions _options;
         private readonly HttpClient _httpClient;
-        private readonly IConfiguration _configuration;
-        private readonly string _projectId;
-        private readonly string _accessToken;
-        private readonly string _modelId;
-        private readonly string _region;
 
-        public GeminiService(HttpClient httpClient, IConfiguration configuration)
+        public GeminiService(
+            IOptions<GeminiOptions> options,
+            IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClient;
-            _httpClient.Timeout = TimeSpan.FromMinutes(5);
-            _configuration = configuration;
-            _projectId = _configuration["Gemini:ProjectId"] ?? throw new ArgumentException("Gemini:ProjectId was not defined.");
-            _accessToken = _configuration["Gemini:AccessToken"] ?? throw new ArgumentException("Gemini:AccessToken was not defined.");
-            _modelId = _configuration["Gemini:ModelId"] ?? throw new ArgumentException("Gemini:ModelId was not defined.");
-            _region = _configuration["Gemini:Region"] ?? throw new ArgumentException("Gemini:Region was not defined.");
+            _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+            if (string.IsNullOrEmpty(_options.ProjectId) || string.IsNullOrEmpty(_options.Region) || string.IsNullOrEmpty(_options.ModelId))
+                throw new ArgumentException("GeminiOptions must have valid ProjectId, Region, and ModelId.");
+
+            _httpClient = httpClientFactory.CreateClient("GeminiClient");
         }
 
         public async Task<LLMResponse> GenerateContentAsync(string prompt)
         {
-            var endpoint = $"https://us-central1-aiplatform.googleapis.com/v1/projects/{_projectId}/locations/{_region}/publishers/google/models/{_modelId}:generateContent";
+            var endpoint = $"https://us-central1-aiplatform.googleapis.com/v1/projects/{_options.ProjectId}/locations/{_options.Region}/publishers/google/models/{_options.ModelId}:generateContent";
 
             var requestBody = new
             {
@@ -44,7 +40,6 @@ namespace Text2Diagram_Backend.LLMGeminiService
 
             var requestJson = JsonSerializer.Serialize(requestBody);
             var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
-            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             requestMessage.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.SendAsync(requestMessage);
@@ -66,7 +61,7 @@ namespace Text2Diagram_Backend.LLMGeminiService
 
             return new LLMResponse
             {
-                Content = text
+                Content = text ?? string.Empty
             };
         }
     }

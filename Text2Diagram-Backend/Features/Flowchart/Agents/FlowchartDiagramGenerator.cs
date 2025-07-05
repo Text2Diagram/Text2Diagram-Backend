@@ -1,13 +1,9 @@
 using Microsoft.AspNetCore.SignalR;
-using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
-using Text2Diagram_Backend.Data;
-using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 using Text2Diagram_Backend.Middlewares;
 
@@ -20,8 +16,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private readonly UseCaseSpecAnalyzerForFlowchart _analyzer;
     private readonly DecisionNodeInserter _decisionNodeInserter;
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
-    private readonly ApplicationDbContext _dbContext;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
 
     public FlowchartDiagramGenerator(
@@ -30,8 +24,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
         RejoinPointIdentifier rejoinPointIdentifier,
-        ApplicationDbContext dbContext,
-        IHttpContextAccessor httpContextAccessor,
         IHubContext<ThoughtProcessHub> hubContext)
     {
         _logger = logger;
@@ -39,8 +31,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _analyzer = analyzer;
         _decisionNodeInserter = decisionNodeInserter;
         _rejoinPointIdentifier = rejoinPointIdentifier;
-        _dbContext = dbContext;
-        _httpContextAccessor = httpContextAccessor;
         _hubContext = hubContext;
     }
 
@@ -64,18 +54,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 WriteIndented = true
             });
             _logger.LogInformation("{JsonString}", jsonString);
-
-            var userId = _httpContextAccessor?.HttpContext?.User.GetUserId();
-            var tempDiagram = new TempDiagram()
-            {
-                DiagramData = jsonString,
-                DiagramType = DiagramType.Flowchart,
-                CreatedAt = DateTime.UtcNow,
-                UserId = userId ?? throw new ArgumentNullException(nameof(userId))
-            };
-            _dbContext.TempDiagrams.Add(tempDiagram);
-
-            await _dbContext.SaveChangesAsync();
 
             await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart...");
 

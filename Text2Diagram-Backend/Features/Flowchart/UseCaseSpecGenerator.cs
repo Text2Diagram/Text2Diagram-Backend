@@ -1,30 +1,27 @@
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
+using System.Text.Json;
+using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Features.Flowchart.Agents;
 
 namespace Text2Diagram_Backend.Features.Flowchart;
 
 public class UseCaseSpecGenerator
 {
-    private readonly Kernel kernel;
-    private readonly ILogger<UseCaseSpecGenerator> logger;
+    private readonly ILLMService _llmService;
 
     public UseCaseSpecGenerator(
-        Kernel kernel,
-        ILogger<UseCaseSpecGenerator> logger)
+        ILLMService llmService)
     {
-        this.kernel = kernel;
-        this.logger = logger;
+        _llmService = llmService;
     }
 
-    public async Task<string> GenerateUseCaseSpecAsync(string description)
+    public async Task<List<string>> GenerateUseCaseSpecAsync(string description)
     {
-        var prompt = GetPrompt(description);
-        IChatCompletionService chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-        var chatHistory = new ChatHistory();
-        chatHistory.AddUserMessage(prompt);
-        var response = await chatCompletionService.GetChatMessageContentAsync(prompt, kernel: kernel);
-        logger.LogInformation("Generated use case: {response}", response);
-        return response.Content ?? "";
+        var response = await _llmService.GenerateContentAsync(GetPrompt(description));
+        var json = FlowchartHelpers.ValidateJson(response.Content);
+        return JsonSerializer.Deserialize<List<string>>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        }) ?? throw new InvalidOperationException("Deserialized use case specifications failed.");
     }
 
     private string GetPrompt(string description)
@@ -33,13 +30,11 @@ public class UseCaseSpecGenerator
             You are an expert System Analyst specializing in creating detailed and structured use case specifications.
 
             # TASK
-            Generate a comprehensive use case specification for the following system description:
+            Generate comprehensive use case specifications for the following system description:
             {description}
 
             # FORMAT REQUIREMENTS
             Your use case specification MUST follow this exact structure:
-
-            ```
             Use Case: [Concise title describing the primary action]
             Description: [Brief summary of what this use case accomplishes]
             Actor: [Primary actor(s) who initiate or participate in this use case]
@@ -62,12 +57,9 @@ public class UseCaseSpecGenerator
             1. [Name or condition of first exception]:
                 - [How the system handles this exception]
                 - [Steps to recover or alternate path]
-            ```
 
             # EXAMPLE
             Here is an example of a well-structured use case:
-
-            ```
             Use Case: Purchase
             Description: This feature allows users to purchase items added to their shopping cart or from the product detail page.
             Actor: User
@@ -99,7 +91,6 @@ public class UseCaseSpecGenerator
                 - The user cannot purchase a product with a quantity exceeding the current stock or less than one.
                 - The user cannot purchase a product with no stock or an out-of-stock option for products with multiple options.
                 - The "Checkout" button is disabled if the selected product is invalid.
-            ```
 
             # GUIDELINES FOR QUALITY
             1. Be specific and detailed in each step
@@ -112,6 +103,7 @@ public class UseCaseSpecGenerator
             8. Maintain the exact formatting structure provided
 
             # OUTPUT
+            An array of strings, each string representing a use case specification in the format described above.
             Provide ONLY the use case specification without any additional explanations or commentary.
             """;
     }

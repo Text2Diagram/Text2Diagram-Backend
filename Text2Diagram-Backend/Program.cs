@@ -78,7 +78,7 @@ builder.Services.AddScoped<IDiagramGeneratorFactory, DiagramGeneratorFactory>();
 //builder.Services.AddSingleton<ISyntaxValidator, MermaidSyntaxValidator>();
 
 
-builder.Services.AddSingleton<UseCaseSpecGenerator>();
+builder.Services.AddScoped<UseCaseSpecGenerator>();
 
 // Add Firebase Authentication
 builder.Services.AddSingleton<FirebaseTokenVerifier>();
@@ -102,8 +102,6 @@ builder.Services.AddHttpClient("GeminiClient", client =>
 builder.Services.AddTransient<GoogleAuthHandler>();
 
 builder.Services.AddScoped<ILLMService, GeminiService>();
-
-builder.Services.AddSingleton<UseCaseSpecGenerator>();
 // Register flowchart components
 builder.Services.AddScoped<FlowchartDiagramGenerator>();
 builder.Services.AddScoped<ERDiagramGenerator>();

@@ -23,6 +23,8 @@ public record RegenerateDiagramRequest(
     string diagramType
 );
 
+public record GenerateUseCaseSpecRequest(string Description);
+
 [FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
@@ -119,9 +121,9 @@ public class GeneratorsController : ControllerBase
     }
 
     [HttpPost("usecasespec")]
-    public async Task<IActionResult> GenerateUseCaseSpec([FromBody] string input)
+    public async Task<IActionResult> GenerateUseCaseSpec([FromBody] GenerateUseCaseSpecRequest request)
     {
-        var result = await useCaseSpecGenerator.GenerateUseCaseSpecAsync(input);
+        var result = await useCaseSpecGenerator.GenerateUseCaseSpecAsync(request.Description);
         return Ok(result);
     }
 

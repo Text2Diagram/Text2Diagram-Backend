@@ -31,7 +31,6 @@
                 - Include/Extend relationships should stay inside the package if both base and target are in the same area; otherwise, keep them in the most relevant package.
                 - Try to minimize duplication across packages.
                 - Package names should be descriptive and relevant (e.g., “Appointment Management”, “Authentication”).
-                - Actor name must use **Pascal_Snake_Case**, meaning words are separated by `_` and each word is **capitalized** (e.g., `Department_Administrator`, `Academic_Advisor`).
 
                 ### FORMAT:
                 Return the result as valid JSON like below:

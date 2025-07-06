@@ -20,6 +20,9 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                 ### INSTRUCTIONS:
                 - A use case describes a single interaction goal or functional behavior that the system must support.
                 - Use case names should be **short, action-oriented phrases** (e.g., "Place Order", "Search Products").
+                - Do not include descriptions in parentheses after the use case name (e.g. "Manage users (patients, doctors, receptionists)").
+                - Avoid multiple functionalities for one use case (e.g. "Register/Login")
+                - Use case name must contain only words and spaces, avoid slashes, parentheses, commas, semicolons, ... or any other punctuation marks.
                 - Do not include UI descriptions, internal processes, or implementation details.
                 - Avoid vague or overly technical terms.
 

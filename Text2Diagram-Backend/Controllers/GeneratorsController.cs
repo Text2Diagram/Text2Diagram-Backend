@@ -29,20 +29,17 @@ public record RegenerateDiagramRequest(
 public class GeneratorsController : ControllerBase
 {
     private readonly IDiagramGeneratorFactory generatorFactory;
-    private readonly RegenerateFlowchartDiagramAgent _regenerateFlowchartDiagramAgent;
     private readonly RegenerateUsecaseDiagram _regenerateUsecaseDiagramAgent;
     private readonly UseCaseSpecGenerator useCaseSpecGenerator;
     private readonly ApplicationDbContext _dbContext;
 
     public GeneratorsController(
         IDiagramGeneratorFactory generatorFactory,
-        RegenerateFlowchartDiagramAgent regenerateFlowchartDiagramAgent,
         RegenerateUsecaseDiagram regenerateUsecaseDiagramAgent,
         UseCaseSpecGenerator useCaseSpecGenerator,
         ApplicationDbContext dbContext)
     {
         this.generatorFactory = generatorFactory;
-        _regenerateFlowchartDiagramAgent = regenerateFlowchartDiagramAgent;
         _regenerateUsecaseDiagramAgent = regenerateUsecaseDiagramAgent;
         this.useCaseSpecGenerator = useCaseSpecGenerator;
         _dbContext = dbContext;
@@ -118,11 +115,6 @@ public class GeneratorsController : ControllerBase
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
         var diagram = await diagramGenerator.GenerateAsync(input);
-        string x = "";
-
-        //var tempDiagram = await _dbContext.TempDiagrams.OrderByDescending(x => x.CreatedAt)
-        //    .FirstOrDefaultAsync(x => x.UserId == User.GetUserId());
-
         return Ok(diagram);
     }
 

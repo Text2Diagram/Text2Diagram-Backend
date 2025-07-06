@@ -6,6 +6,7 @@ using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
+using Text2Diagram_Backend.Features.UsecaseDiagram.Separate;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -14,15 +15,18 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
     private readonly ILogger<UsecaseDiagramGenerator> logger;
     private readonly UseCaseSpecAnalyzerForUsecaseDiagram analyzer;
     private readonly ApplicationDbContext dbContext;
+    private readonly ILLMService _llmService;
 
     public UsecaseDiagramGenerator(
         ILogger<UsecaseDiagramGenerator> logger,
         UseCaseSpecAnalyzerForUsecaseDiagram analyzer,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        ILLMService llmService)
     {
         this.logger = logger;
         this.analyzer = analyzer;
         this.dbContext = dbContext;
+        _llmService = llmService;
     }
 
     /// <summary>
@@ -58,6 +62,21 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
 
 	public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
 	{
+        logger.LogInformation("Regenerating flowchart with feedback: {Feedback}", feedback);
+
+        var response = await ApplyCommandsAsync(feedback);
+        var feedbackNode = Helpers.ValidateJson(response);
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        };
+        var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(diagramJson, options);
+        var instruction = System.Text.Json.JsonSerializer.Deserialize<Instructions>(feedbackNode, options);
+        var newUseCaseDiagram = Helpers.ApplyInstructions(diagram, instruction);
+        var planUMLCode = GeneratePlantUMLCode(newUseCaseDiagram);
+        logger.LogInformation("Regenerated Use Case Diagram with feedback: {Feedback}", feedback);
         return new DiagramContent();
 	}
 
@@ -119,68 +138,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                 puml.AppendLine();
                 puml.AppendLine("}");
             }
-        }
-
-        /*//Actors
-        if (diagram.Actors != null && diagram.Actors.Any())
-        {
-            foreach (var actor in diagram.Actors)
-            {
-                puml.AppendLine($"actor \"{EscapePlantUmlString(actor)}\" ");//as {CreateAlias(actor)}
-            }
-            puml.AppendLine(); 
-        }
-
-        // Usecases
-        if (diagram.UseCases != null)
-        {
-            bool addedStandaloneUseCase = false;
-            foreach (var useCase in diagram.UseCases)
-            {
-                if (!useCasesInBoundaries.Contains(useCase))
-                {
-                    puml.AppendLine($"usecase \"{EscapePlantUmlString(useCase)}\" as {CreateAlias(useCase)}");
-                    addedStandaloneUseCase = true;
-                }
-            }
-            if (addedStandaloneUseCase)
-            {
-                puml.AppendLine(); 
-            }
-        }
-
-        // Associations (Actor <--> UseCase)
-        if (diagram.Associations != null && diagram.Associations.Any())
-        {
-            foreach (var assoc in diagram.Associations)
-            {
-                // Use aliases for cleaner connections
-                puml.AppendLine($"{EscapePlantUmlString(assoc.Actor)} --> {CreateAlias(assoc.UseCase)}");
-            }
-            puml.AppendLine();
-        }
-
-        // Includes (Base ..> Included : <<include>>)
-        if (diagram.Includes != null && diagram.Includes.Any())
-        {
-            foreach (var include in diagram.Includes)
-            {
-                // Use aliases
-                puml.AppendLine($"{CreateAlias(include.BaseUseCase)} ..> {CreateAlias(include.IncludedUseCase)} : <<include>>");
-            }
-            puml.AppendLine();
-        }
-
-        // Extends (Base <.. Extended : <<extend>>) - Note the direction
-        if (diagram.Extends != null && diagram.Extends.Any())
-        {
-            foreach (var extend in diagram.Extends)
-            {
-                // Use aliases
-                puml.AppendLine($"{CreateAlias(extend.BaseUseCase)} <.. {CreateAlias(extend.ExtendedUseCase)} : <<extend>>");
-            }
-            puml.AppendLine();
-        }*/
+        }   
 
         puml.AppendLine("@enduml");
 
@@ -188,18 +146,6 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
 
     }
 
-    private string CreateAlias(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return "_"; 
-        var safeName = System.Text.RegularExpressions.Regex.Replace(name, @"[\s\W]+", "_");
-
-        if (char.IsDigit(safeName[0]))
-        {
-            safeName = "_" + safeName;
-        }
-
-        return string.IsNullOrWhiteSpace(safeName) ? "_" : safeName;
-    }
 
 
     private string EscapePlantUmlString(string input)
@@ -208,119 +154,92 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         return input.Replace("\"", "\\\"");
     }
 
-    //private async Task<string> GetPromptAsync(UseCaseDiagramElements useCaseElements)
-    //{
-    //    var filePath = Path.Combine("D:\\FinalProject\\Text2Diagram-Backend\\Text2Diagram-Backend", "UsecaseDiagram", "usecasediagram.md");
-    //    var guidance = await File.ReadAllTextAsync(filePath, Encoding.UTF8);
+    private async Task<string> ApplyCommandsAsync(string feedback)
+    {
+        logger.LogInformation("Regenerating use case diagram with feedback: {Feedback}", feedback);
+        var prompt = $"""
+            You are helping to update a Use Case Model based on user feedback.
 
-    //    var jsonData = JsonSerializer.Serialize(
-    //        useCaseElements,
-    //        new JsonSerializerOptions { WriteIndented = true });
+            ### TASK:
+            Given the following natural language feedback from the user, convert it into a structured instruction:
+           
+            FEEDBACK:
+            "{feedback}"
+            """
+        +
+        """
+            ### INSTRUCTIONS:
+            - Your task is to **interpret the user's feedback** and return a valid JSON instruction describing:
+              - What action to perform (`Add`, `Remove`, `Update`)
+              - On which target (`Actor`, `UseCase`, `Association`, `Include`, `Extend`, `Package`)
+              - The fields needed to execute that action.
 
-    //    logger.LogInformation("UsecaseDiagram Generation Structured Data: {jsonData}", jsonData);
+            - The JSON must contain the following fields depending on the target:
 
-    //    return $"""
-    //    You are a Use Case Diagram Generator agent.Generate a PlantUML use case diagram strictly following these rules:
+            | Target        | Action Types       | Required Fields                                                        |
+            |---------------|--------------------|------------------------------------------------------------------------|
+            | Actor         | Add/Remove/Update  | `Name` (and `NewName` for update)                                      |
+            | UseCase       | Add/Remove/Update  | `Name` (and `NewName` for update)                                      |
+            | Association   | Add/Remove         | `Actor`, `UseCase`                                                     |
+            | Include       | Add/Remove         | `BaseUseCase`, `IncludedUseCase`                                      |
+            | Extend        | Add/Remove         | `BaseUseCase`, `ExtendedUseCase`                                      |
+            | Package       | Add/Remove/Update  | `Name` (and optionally: `NewName`, `UseCases`, `Actors`)              |
 
-    //    Mapping Rules:
-    //    1. Actors: Represent actors using the "actor" keyword.
-    //    2. Use Cases: Represent use cases using the "usecase" keyword.
-    //    3. Relationships:
-    //       - Association: Represent interactions between actors and use cases with "-->".
-    //       - Include: Represent included use cases with "..>" and "<<include>>".
-    //       - Extend: Represent extended use cases with "..>" and "<<extend>>".
-    //    4. Grouping: Use packages to group related use cases.
-    //    5. Visibility:
-    //       - Public use cases are displayed normally.
-    //       - Optional or extended flows should use "<<extend>>".
-    //       - Reusable flows should use "<<include>>".
-
-    //    Syntax Documentation: 
-    //    The following documentation outlines the syntax and rules for creating Mermaid.js flowcharts. You must strictly adhere to this syntax:
-    //    {guidance}
-
-    //    Instructions:
-    //    1. Strictly use the structured data below.Do NOT include use cases from other sources.
-    //    2. Follow the syntax rules from the documentation exactly.
-    //    3. Ensure the output is a valid PlantUML code block.
-    //    4. Do not include any explanations, comments, or additional text outside the PlantUML code.
-    //    5. Ensure all actors and use cases are connected logically.
-    //    6. Only include items from the structured data.Do not add extra use cases, actors, or flows.
-
-
-    //    """ +
-    //    """
-    //    Example Input:
-    //    {
-    //        "Actors": ["Customer", "Cashier", "Manager"],
-    //      "UseCases": [
-    //        "Place Order",
-    //        "Make Payment",
-    //        "Cancel Order",
-    //        "Manage Products",
-    //        "View Sales Report"
-    //      ],
-    //      "Associations": {
-    //            "Customer": ["Place Order", "Cancel Order"],
-    //        "Cashier": ["Make Payment"],
-    //        "Manager": ["Manage Products", "View Sales Report"]
-    //      },
-    //      "Includes": {
-    //            "Place Order": ["Make Payment"]
-    //      },
-    //      "Extends": {
-    //            "Cancel Order": ["Place Order"]
-    //      },
-    //      "Groups": {
-    //            "Order Management": ["Place Order", "Cancel Order", "Make Payment"],
-    //        "Admin Functions": ["Manage Products", "View Sales Report"]
-    //      }
-    //    }
-
-    //    Example Output:
-    //    @startuml
-    //    actor "Customer" as Customer
-    //    actor "Cashier" as Cashier
-    //    actor "Manager" as Manager
-
-    //    package "Order Management" {
-    //        usecase "Place Order" as UC1
-    //        usecase "Make Payment" as UC2
-    //        usecase "Cancel Order" as UC3
-
-    //        UC1 ..> UC2 : "<<include>>"
-    //        UC3 ..> UC1 : "<<extend>>"
-    //    }
-
-    //    package "Admin Functions" {
-    //        usecase "Manage Products" as UC4
-    //        usecase "View Sales Report" as UC5
-    //    }
-
-    //    Customer --> UC1
-    //    Customer --> UC3
-    //    Cashier --> UC2
-    //    Manager --> UC4
-    //    Manager --> UC5
-    //    @enduml
-
-
-    //    """ +
-    //    $"""
-    //    # Structured Data:
-    //    {jsonData}
-
-    //    Generate and return only the PlantUML code. Do not include explanations, comments, or additional text outside the PlantUML code.
-
-    //    """
-    //    ;
-    //}
-    //private string PostProcess(string output)
-    //{
-    //    output = output.Trim();
-    //    return output.Contains("```mermaid")
-    //            ? output.Split(["```mermaid", "```"], StringSplitOptions.RemoveEmptyEntries)[1]
-    //            : output;
-
-    //}
+            - You can only return one instruction per output.
+            - If the action is `"Update"`, include both the current `Name` and `NewName`.
+            
+            """
+        +
+        """
+            ### FORMAT:
+            ```json
+            "Instructions": [
+                {
+                  "Action": "Add" | "Remove" | "Update",
+                  "Target": "Actor" | "UseCase" | "Association" | "Include" | "Extend" | "Package",
+                  // Optional fields depending on Target:
+                  "Name": "string",
+                  "NewName": "string",
+                  "Actor": "string",
+                  "UseCase": "string",
+                  "BaseUseCase": "string",
+                  "IncludedUseCase": "string",
+                  "ExtendedUseCase": "string",
+                  "UseCases": ["string", ...],
+                  "Actors": ["string", ...]
+                }
+            ]
+            ```
+            """
+        +
+        """"
+            ### EXAMPLE 1:
+            INPUT:
+            - Feedback: "Add a new use case called 'Track Order'", "Link the Customer to the Track Order use case", "Group user login and logout into a package called 'Authentication Services'"
+            OUTPUT:
+            ```json
+            "Instructions": [
+                {
+                  "Action": "Add",
+                  "Target": "UseCase",
+                  "Name": "Track_Order"
+                },
+                {
+                  "Action": "Add",
+                  "Target": "Association",
+                  "Actor": "Customer",
+                  "UseCase": "Track_Order"
+                },
+                {
+                  "Action": "Add",
+                  "Target": "Package",
+                  "Name": "Authentication_Services",
+                  "UseCases": ["Log_In", "Log_Out"]
+                }
+            ]
+            ```
+            """";
+        var response = await _llmService.GenerateContentAsync(prompt);
+        return response.Content;
+    }
 }

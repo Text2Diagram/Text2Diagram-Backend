@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -8,11 +9,13 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.ERD.Agents;
 using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.Features.Helper;
 using Text2Diagram_Backend.Features.Sequence.NewWay.Objects;
 using Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.ERD;
 
@@ -28,12 +31,14 @@ public class AnalyzerForER
 	private const int MaxRetries = 1;
     private static readonly string[] ValidRelationshipTypes = Enum.GetNames(typeof(RelationshipType));
     private static readonly string[] ValidPropertyRoles = new[] { "PK", "FK", "" };
+	private readonly IHubContext<ThoughtProcessHub> _hubContext;
 
-    public AnalyzerForER(Kernel kernel, ILogger<AnalyzerForER> logger, ILLMService lLMService)
+	public AnalyzerForER(Kernel kernel, ILogger<AnalyzerForER> logger, ILLMService lLMService, IHubContext<ThoughtProcessHub> hubContext)
     {
         this.kernel = kernel;
         this.logger = logger;
 		_llmService = lLMService;
+		_hubContext = hubContext;
 	}
 
     /// <summary>
@@ -60,19 +65,22 @@ public class AnalyzerForER
                 string promtIdentifyEntities = Step1_IdentifyEntity.GetPromtIdentifyEntity(domainDescription);
                 var responseIdentifyEntities = await _llmService.GenerateContentAsync(promtIdentifyEntities);
                 var textContent = responseIdentifyEntities.Content ?? "";
-                var finalIdentifyEntities = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify entities....");
+				var finalIdentifyEntities = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listEntity = DeserializeLLMResponseFunc.DeserializeLLMResponse<string>(finalIdentifyEntities);
                 //step 2: Identify properties
                 string promtIdentifyProperties = Step2_IdentifyProperty.PromtIdentifyProperty(domainDescription, JsonConvert.SerializeObject(listEntity));
                 var responseIdentifyProperties = await _llmService.GenerateContentAsync(promtIdentifyProperties);
                 textContent = responseIdentifyProperties.Content ?? "";
-                var finalIdentifyProperties = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify properties....");
+				var finalIdentifyProperties = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listCompletedEntity = DeserializeLLMResponseFunc.DeserializeLLMResponse<Entity>(finalIdentifyProperties);
                 //step 3: Identify relationships
                 string promtIdentifyRelationships = Step3_IdentifyRelation.PromtIdentifyRelation(domainDescription, JsonConvert.SerializeObject(listEntity));
                 var responseIdentifyRelationships = await _llmService.GenerateContentAsync(promtIdentifyRelationships);
                 textContent = responseIdentifyRelationships.Content ?? "";
-                var finalIdentifyRelationships = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify relationships....");
+				var finalIdentifyRelationships = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listRelationship = DeserializeLLMResponseFunc.DeserializeLLMResponse<Relationship>(finalIdentifyRelationships);
 
                 // Deserialize JSON to ERDiagram

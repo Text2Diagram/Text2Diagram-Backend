@@ -193,6 +193,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         """
             ### FORMAT:
             ```json
+            {
             "Instructions": [
                 {
                   "Action": "Add" | "Remove" | "Update",
@@ -206,23 +207,26 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                   "IncludedUseCase": "string",
                   "ExtendedUseCase": "string",
                   "UseCases": ["string", ...],
-                  "Actors": ["string", ...]
+                  "Actors": ["string", ...],
+                  "PackageName": "string"
                 }
             ]
+            }
             ```
             """
         +
         """"
             ### EXAMPLE 1:
             INPUT:
-            - Feedback: "Add a new use case called 'Track Order'", "Link the Customer to the Track Order use case", "Group user login and logout into a package called 'Authentication Services'"
+            - Feedback: "Add a new use case called 'Track Order' in the package 'Order_Services'", "Actor Customer in System Administration should also has usecase 'Track_Order' in the package 'Order_Services'"", "Group user login and logout into a package called 'Authentication Services'"
             OUTPUT:
             ```json
             "Instructions": [
                 {
                   "Action": "Add",
                   "Target": "UseCase",
-                  "Name": "Track_Order"
+                  "Name": "Track_Order",
+                  "PackageName": "Order_Services"
                 },
                 {
                   "Action": "Add",
@@ -233,7 +237,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
                 {
                   "Action": "Add",
                   "Target": "Package",
-                  "Name": "Authentication_Services",
+                  "PackageName": "Authentication_Services",
                   "UseCases": ["Log_In", "Log_Out"]
                 }
             ]

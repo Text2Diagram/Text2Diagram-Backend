@@ -23,6 +23,7 @@
         // Common properties
         public string? Name { get; set; }
         public string? NewName { get; set; }
+        public string? PackageName { get; set; }
 
         // For Association
         public string? Actor { get; set; }
@@ -38,5 +39,6 @@
         // For Package
         public List<string>? UseCases { get; set; }
         public List<string>? Actors { get; set; }
+
     }
 }

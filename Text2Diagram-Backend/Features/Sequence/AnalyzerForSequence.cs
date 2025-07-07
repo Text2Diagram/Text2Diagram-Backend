@@ -13,6 +13,9 @@ using DocumentFormat.OpenXml.VariantTypes;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Helper;
 using Text2Diagram_Backend.Features.Sequence.Agent;
+using Microsoft.AspNetCore.SignalR;
+using Text2Diagram_Backend.Common.Hubs;
+using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Sequence;
 
@@ -26,11 +29,14 @@ public class AnalyzerForSequence
     private readonly ILogger<AnalyzerForSequence> logger;
     private const int MaxRetries = 1;
 	private readonly ILLMService _llmService;
-	public AnalyzerForSequence(Kernel kernel, ILogger<AnalyzerForSequence> logger, ILLMService llmService)
+    private IHubContext<ThoughtProcessHub> _hubContext;
+	public AnalyzerForSequence(Kernel kernel, ILogger<AnalyzerForSequence> logger, ILLMService llmService
+        , IHubContext<ThoughtProcessHub> hubContext)
     {
         this.kernel = kernel;
         this.logger = logger;
 		_llmService = llmService;
+        _hubContext = hubContext;
 	}
     /// <summary>
     /// Analyzes a domain description to generate an Entity Relationship Diagram.
@@ -55,8 +61,9 @@ public class AnalyzerForSequence
 				//chatHistory.AddUserMessage(promtGetFlow);
 				//var responseGetFlowInStep1 = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                 var textGetFlow = responseGetFlowInStep1.Content ?? "";
-                // Extract JSON from the response
-                var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Pre-process the input....");
+				// Extract JSON from the response
+				var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
                 var listUseCaseInGetFlow = DeserializeLLMResponseFunc.DeserializeLLMResponse<UseCaseDto>(finalGetFlow);
                 foreach (var item in listUseCaseInGetFlow)
                 {
@@ -65,8 +72,9 @@ public class AnalyzerForSequence
                     //chatHistory.AddUserMessage(promtCombineFlow);
                     var responseCombineFlow = await _llmService.GenerateContentAsync(promtCombineFlow);
                     var textContentCombineflow = responseCombineFlow.Content ?? "";
-                    // Extract JSON from the response
-                    var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Combine flows....");
+					// Extract JSON from the response
+					var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
                     var listCombineFlow = DeserializeLLMResponseFunc.DeserializeLLMResponse<UseCaseInputDto>(finalCombineFlow);
                     //step_3 : identify participants
                     var strCombineFlow = JsonConvert.SerializeObject(listCombineFlow.FirstOrDefault());
@@ -75,7 +83,8 @@ public class AnalyzerForSequence
                     //var responseParticipants = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                     var responseParticipants = await _llmService.GenerateContentAsync(promtIdentityParticipant);
 					var textContentParticipants = responseParticipants.Content ?? "";
-                    var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify participants....");
+					var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
                     var listParticipants = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepParticipantDto>(finalParticipants);
                     //step_4 : Identify conditions
                     var promtIdentifyConditions = Step4_IdentifyCondition.IdentifyCondition(strCombineFlow);
@@ -83,7 +92,8 @@ public class AnalyzerForSequence
                     //var responseConditions = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                     var responseConditions = await _llmService.GenerateContentAsync(promtIdentifyConditions);
                     var textContentConditions = responseConditions.Content ?? "";
-                    var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify conditions....");
+					var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
                     var listConditions = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepControlTypeDto>(finalConditions);
                     //step_5 : Combine LLM responses
                     var promtCombineLLMResponse = Step5_CombineLLMResult.CombineLLMResults(listCombineFlow.FirstOrDefault(), listParticipants, listConditions);
@@ -93,8 +103,9 @@ public class AnalyzerForSequence
                     //chatHistory.AddUserMessage(promtFinalGenerateMermaid);
                     var responseMermaid = await _llmService.GenerateContentAsync(promtFinalGenerateMermaid);
                     var textReponseMermaid = responseMermaid.Content ?? "";
-                    //var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
-                    //var diagram = DeserializeToMermaicode(finalMermaidCode);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generate mermaid syntax for sequence diagram....");
+					//var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
+					//var diagram = DeserializeToMermaicode(finalMermaidCode);
 					return StripMermaidFences(textReponseMermaid);
                 }
 

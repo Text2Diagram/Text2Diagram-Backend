@@ -122,8 +122,6 @@ builder.Services.AddScoped<FlowCategorizer>();
 builder.Services.AddScoped<DecisionNodeInserter>();
 builder.Services.AddScoped<RejoinPointIdentifier>();
 
-builder.Services.AddScoped<RegenerateUsecaseDiagram>();
-
 
 builder.Services.AddHttpContextAccessor();
 

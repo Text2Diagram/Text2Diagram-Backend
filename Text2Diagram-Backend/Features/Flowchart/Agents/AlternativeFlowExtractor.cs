@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.LLMServices;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -9,7 +10,8 @@ public class AlternativeFlowExtractor
     private readonly ILLMService _llmService;
     private readonly ILogger<AlternativeFlowExtractor> _logger;
 
-    public AlternativeFlowExtractor(ILLMService llmService, ILogger<AlternativeFlowExtractor> logger)
+    public AlternativeFlowExtractor(ILLMService llmService,
+        ILogger<AlternativeFlowExtractor> logger)
     {
         _llmService = llmService;
         _logger = logger;

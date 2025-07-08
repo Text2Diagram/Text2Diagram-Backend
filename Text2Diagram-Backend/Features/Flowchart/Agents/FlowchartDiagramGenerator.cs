@@ -248,7 +248,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 if (!allNodes.ContainsKey(nodeId))
                 {
                     allNodes[nodeId] = new FlowNode(nodeId, node.Label, node.Type);
-                    _logger.LogWarning("Assigned node ID {NodeId} for subflow {SubFlowName}, original node {OriginalNodeId}",
+                    _logger.LogInformation("Assigned node ID {NodeId} for subflow {SubFlowName}, original node {OriginalNodeId}",
                         nodeId, subflow.Name, node.Id);
                 }
             }
@@ -297,7 +297,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             }
         }
 
-        // Cleanup: Use LLM to fix duplicates, incorrect sequence, and add rejoin edges
         (allNodes, allEdges) = await CleanupFlowchartAsync(allNodes, allEdges, flowchart.Flows, subflows);
 
         // Generate node definitions
@@ -348,7 +347,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         var edgesJson = JsonSerializer.Serialize(allEdges.Select(e => new { e.SourceId, e.TargetId, e.Label, Type = e.Type.ToString() }));
 
         var prompt = $"""
-            You are tasked with cleaning up a flowchart for a ride-hailing app. Given the nodes and edges below, perform the following:
+            You are tasked with cleaning up a flowchart. Given the nodes and edges below, perform the following:
             1. **Remove duplicate edges**: Remove edges with the same SourceId, TargetId, and Label, keeping only one (prefer Arrow over OpenArrow). For example, remove duplicates like:
                - decision_locationServicesDisabled -->|No| locationServicesDisabled_exception_flow_inputoutput_1 and decision_locationServicesDisabled --o|No| locationServicesDisabled_exception_flow_inputoutput_1
             2. **Correct basic flow sequence**: Ensure the basic flow follows these exact edges:
@@ -403,12 +402,16 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 "Nodes": [{"Id": string, "Label": string, "Type": string}, ...],
                 "Edges": [{"SourceId": string, "TargetId": string, "Label": string, "Type": string}, ...]
             }
+
+            Include all nodes and edges, even if they are not modified. 
+            Ensure the output is valid JSON wrapped in ```json\n...\n``` code fences.
+            Do not include any additional text or explanations outside the JSON structure.
             """;
 
         try
         {
             var response = await _llmService.GenerateContentAsync(prompt);
-            _logger.LogWarning("LLM cleanup response: {Response}", response.Content);
+            _logger.LogInformation("LLM cleanup response: {Response}", response.Content);
             var jsonResponse = FlowchartHelpers.ValidateJson(response.Content);
             if (jsonResponse == null)
             {

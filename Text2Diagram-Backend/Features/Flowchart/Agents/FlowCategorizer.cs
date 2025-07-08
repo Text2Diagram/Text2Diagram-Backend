@@ -1,8 +1,9 @@
-﻿using Microsoft.SemanticKernel.ChatCompletion;
+﻿
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Common.Abstractions;
+using Text2Diagram_Backend.LLMServices;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
@@ -10,11 +11,13 @@ public class FlowCategorizer
 {
     private readonly ILLMService _llmService;
     private readonly ILogger<FlowCategorizer> _logger;
+    private readonly AiTogetherService _aiTogetherService;
 
-    public FlowCategorizer(ILLMService llmService, ILogger<FlowCategorizer> logger)
+    public FlowCategorizer(ILLMService llmService, ILogger<FlowCategorizer> logger, AiTogetherService aiTogetherService)
     {
         _llmService = llmService;
         _logger = logger;
+        _aiTogetherService = aiTogetherService;
     }
 
     private FlowCategories ExtractJsonFlows(string textContent)
@@ -160,8 +163,6 @@ public class FlowCategorizer
                 }
                 """;
 
-            var chatHistory = new ChatHistory();
-            chatHistory.AddUserMessage(prompt);
             var response = await _llmService.GenerateContentAsync(prompt);
             var textContent = response.Content;
             _logger.LogDebug("LLM response:\n{0}", textContent);

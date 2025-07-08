@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Flowchart.Components;
 
@@ -10,7 +9,8 @@ public class ExceptionFlowExtractor
     private readonly ILLMService _llmService;
     private readonly ILogger<ExceptionFlowExtractor> _logger;
 
-    public ExceptionFlowExtractor(ILLMService llmService, ILogger<ExceptionFlowExtractor> logger)
+    public ExceptionFlowExtractor(ILLMService llmService,
+        ILogger<ExceptionFlowExtractor> logger)
     {
         _llmService = llmService;
         _logger = logger;

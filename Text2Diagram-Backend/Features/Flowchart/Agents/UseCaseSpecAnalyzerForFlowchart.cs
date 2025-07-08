@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Diagnostics;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
+using Text2Diagram_Backend.LLMServices;
 using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
@@ -14,6 +15,7 @@ public class UseCaseSpecAnalyzerForFlowchart
     private readonly ExceptionFlowExtractor _exceptionFlowExtractor;
     private readonly ILLMService _llmService;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
+    private readonly AiTogetherService _aiTogetherService;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> _logger;
 
     public UseCaseSpecAnalyzerForFlowchart(
@@ -23,6 +25,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         ExceptionFlowExtractor exceptionFlowExtractor,
         ILLMService llmService,
         IHubContext<ThoughtProcessHub> hubContext,
+        AiTogetherService aiTogetherService,
         ILogger<UseCaseSpecAnalyzerForFlowchart> logger)
     {
         _flowCategorizer = flowCategorizer;
@@ -31,6 +34,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         _exceptionFlowExtractor = exceptionFlowExtractor;
         _llmService = llmService;
         _hubContext = hubContext;
+        _aiTogetherService = aiTogetherService;
         _logger = logger;
     }
 
@@ -77,7 +81,7 @@ public class UseCaseSpecAnalyzerForFlowchart
 
         try
         {
-            var domainResponse = await _llmService.GenerateContentAsync(domainPrompt);
+            var domainResponse = await _aiTogetherService.GenerateContentAsync(domainPrompt);
             var domainJson = FlowchartHelpers.ValidateJson(domainResponse.Content);
 
             if (domainJson == null)

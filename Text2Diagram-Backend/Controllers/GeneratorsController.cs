@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Text.Json;
 using Text2Diagram_Backend.Authentication;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Data;
@@ -114,7 +115,7 @@ public class GeneratorsController : ControllerBase
 
         var diagramGenerator = generatorFactory.GetGenerator(diagramType);
         var diagram = await diagramGenerator.GenerateAsync(input);
-        return Ok(diagram);
+        return Ok(JsonSerializer.Serialize(diagram));
     }
 
     [HttpPost("usecasespec")]

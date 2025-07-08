@@ -5,7 +5,7 @@ public static class Prompts
     public const string NodeRules = """
     The output should be a JSON array of objects, each representing a node with the following properties:
     - Id: A unique identifier for the node (e.g., 'start_1', 'process_2').
-    - Label: A descriptive label for the node, summarizing the action or condition.
+    - Label: A descriptive label for the node, summarizing the action or condition. The label must not include special symbols or punctuation.
     - Type: One of: Start, End, Process, Decision, InputOutput, Subroutine, Document, DataStore, Loop, Parallel, Comment.
     Rules:
     - Start: Use for the first step that initiates the process (e.g., "The user clicks the 'Checkout' button", "The process begins").
@@ -29,7 +29,7 @@ public static class Prompts
     - SourceId: The Id of the source node.
     - TargetId: The Id of the target node.
     - Type: The type of edge. The type must be one of: Arrow, OpenArrow, CrossArrow, NoArrow.
-    - Label: An optional label for the edge (e.g., "Yes" or "No" for Decision nodes).
+    - Label: An optional label for the edge (e.g., "Yes" or "No" for Decision nodes). The label must not include special symbols or punctuation.
     Ensure that the output is a valid JSON array and that each edge connects existing nodes.
     Pay special attention to:
     - Decision nodes: Create edges with labels like "Yes" or "No" for branches.

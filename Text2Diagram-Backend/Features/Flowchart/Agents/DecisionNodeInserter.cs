@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System.Diagnostics;
 using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.LLMServices;
 using Text2Diagram_Backend.Middlewares;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
@@ -11,15 +11,18 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 public class DecisionNodeInserter
 {
     private readonly ILLMService _llmService;
+    private readonly AiTogetherService _aiTogetherService;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<DecisionNodeInserter> _logger;
 
     public DecisionNodeInserter(
         ILLMService llmService,
+        AiTogetherService aiTogetherService,
         IHubContext<ThoughtProcessHub> hubContext,
         ILogger<DecisionNodeInserter> logger)
     {
         _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+        _aiTogetherService = aiTogetherService;
         _hubContext = hubContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -169,7 +172,9 @@ public class DecisionNodeInserter
             Return JSON: { "DecisionLabel": "" }
             """;
         var decisionResponse = await _llmService.GenerateContentAsync(decisionPrompt);
+
         var decisionJson = FlowchartHelpers.ValidateJson(decisionResponse.Content);
+
         var decisionLabel = decisionJson?["DecisionLabel"]?.GetValue<string>()
             ?? $"Branch to {subflow.Name}?";
 

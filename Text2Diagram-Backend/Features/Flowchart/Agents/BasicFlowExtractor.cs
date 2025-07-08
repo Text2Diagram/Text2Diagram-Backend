@@ -3,19 +3,23 @@ using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.Flowchart.Components;
+using Text2Diagram_Backend.LLMServices;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class BasicFlowExtractor
 {
     private readonly ILLMService _llmService;
+    private readonly AiTogetherService _aiTogetherService;
     private readonly ILogger<BasicFlowExtractor> _logger;
 
     public BasicFlowExtractor(
         ILLMService llmService,
+        AiTogetherService aiTogetherService,
         ILogger<BasicFlowExtractor> logger)
     {
         _llmService = llmService;
+        _aiTogetherService = aiTogetherService;
         _logger = logger;
     }
 
@@ -67,7 +71,7 @@ public class BasicFlowExtractor
             ```
             """;
 
-        var response = await _llmService.GenerateContentAsync(prompt);
+        var response = await _aiTogetherService.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var nodes = FlowchartHelpers.ExtractNodes(textContent);

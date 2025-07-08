@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.IO.Packaging;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Separate;
@@ -56,43 +57,53 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram
 
         private static UseCaseDiagram AddToModel(UseCaseDiagram model, UserFeedBack i, string target)
         {
-            foreach(var package in model.Packages)
+            var package = model.Packages.FirstOrDefault(p => p.Name == i.PackageName);
+
+            if (!model.Packages.Contains(package)) model.Packages.Add(package);
+
+            switch (target)
             {
-                switch (target)
-                {
-                    case "actor":
-                        if (!package.Actors.Any(a => a.Name == i.Name))
-                            package.Actors.Add(new Actor { Name = i.Name! });
-                        break;
+                case "package":
+                    if (!model.Packages.Any(p => p.Name == i.PackageName))
+                        model.Packages.Add(new UseCasePackage { Name = i.Name! });
+                    break;
 
-                    case "usecase":
-                        if (!package.UseCases.Any(u => u.Name == i.Name))
-                            package.UseCases.Add(new UseCase { Name = i.Name! });
-                        break;
+                case "actor":
+                    if (!package.Actors.Any(a => a.Name == i.Name))
+                        package.Actors.Add(new Actor { Name = i.Name! });
+                    break;
 
-                    case "association":
-                        if (!package.Associations.Any(a => a.Actor == i.Actor && a.UseCase == i.UseCase))
-                            package.Associations.Add(new Association { Actor = i.Actor!, UseCase = i.UseCase! });
-                        break;
+                case "usecase":
+                    if (!package.UseCases.Any(u => u.Name == i.Name))
+                        package.UseCases.Add(new UseCase { Name = i.Name! });
+                    break;
 
-                    case "include":
-                        package.Includes.Add(new Include { BaseUseCase = i.BaseUseCase!, IncludedUseCase = i.IncludedUseCase! });
-                        break;
+                case "association":
+                    if (!package.Associations.Any(a => a.Actor == i.Actor && a.UseCase == i.UseCase))
+                        package.Associations.Add(new Association { Actor = i.Actor!, UseCase = i.UseCase! });
+                    break;
 
-                    case "extend":
-                        package.Extends.Add(new Extend { BaseUseCase = i.BaseUseCase!, ExtendedUseCase = i.ExtendedUseCase! });
-                        break;
-                }
+                case "include":
+                    package.Includes.Add(new Include { BaseUseCase = i.BaseUseCase!, IncludedUseCase = i.IncludedUseCase! });
+                    break;
+
+                case "extend":
+                    package.Extends.Add(new Extend { BaseUseCase = i.BaseUseCase!, ExtendedUseCase = i.ExtendedUseCase! });
+                    break;
             }
             return model;
         }
 
         private static UseCaseDiagram RemoveFromModel(UseCaseDiagram model, UserFeedBack i, string target)
         {
-            foreach(var package in model.Packages)
+            foreach (var package in model.Packages)
             {
                 switch (target)
                 {
+                    case "package":
+                        model.Packages.RemoveAll(p => p.Name == i.Name);
+                        break;
+
                     case "actor":
                         package.Actors.RemoveAll(a => a.Name == i.Name);
                         package.Associations.RemoveAll(a => a.Actor == i.Name);
@@ -123,7 +134,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram
 
         private static UseCaseDiagram UpdateModel(UseCaseDiagram model, UserFeedBack i, string target)
         {
-            foreach(var package in model.Packages)
+            foreach (var package in model.Packages)
             {
                 switch (target)
                 {
@@ -149,6 +160,11 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram
                             if (ext.BaseUseCase == i.Name) ext.BaseUseCase = i.NewName!;
                             if (ext.ExtendedUseCase == i.Name) ext.ExtendedUseCase = i.NewName!;
                         }
+                        break;
+
+                    case "package":
+                        var pkg = model.Packages.FirstOrDefault(p => p.Name == i.Name);
+                        if (pkg != null) pkg.Name = i.NewName!;
                         break;
                 }
             }

@@ -31,18 +31,15 @@ public record GenerateUseCaseSpecRequest(string Description);
 public class GeneratorsController : ControllerBase
 {
     private readonly IDiagramGeneratorFactory generatorFactory;
-    private readonly RegenerateUsecaseDiagram _regenerateUsecaseDiagramAgent;
     private readonly UseCaseSpecGenerator useCaseSpecGenerator;
     private readonly ApplicationDbContext _dbContext;
 
     public GeneratorsController(
         IDiagramGeneratorFactory generatorFactory,
-        RegenerateUsecaseDiagram regenerateUsecaseDiagramAgent,
         UseCaseSpecGenerator useCaseSpecGenerator,
         ApplicationDbContext dbContext)
     {
         this.generatorFactory = generatorFactory;
-        _regenerateUsecaseDiagramAgent = regenerateUsecaseDiagramAgent;
         this.useCaseSpecGenerator = useCaseSpecGenerator;
         _dbContext = dbContext;
     }

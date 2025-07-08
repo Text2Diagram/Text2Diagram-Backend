@@ -134,8 +134,8 @@ public class AnalyzerForSequence
 			var res = await _llmService.GenerateContentAsync(promt);
 			var textContent = res.Content ?? "";
 			// Extract JSON from the response
-			var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
-			return StripMermaidFences(final);
+			//var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+			return StripMermaidFences(textContent);
 		}
         catch (Exception e)
         {

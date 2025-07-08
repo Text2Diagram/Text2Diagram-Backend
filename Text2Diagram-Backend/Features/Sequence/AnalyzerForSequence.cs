@@ -16,6 +16,7 @@ using Text2Diagram_Backend.Features.Sequence.Agent;
 using Microsoft.AspNetCore.SignalR;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Middlewares;
+using Text2Diagram_Backend.Features.Sequence.Agent.Objects;
 
 namespace Text2Diagram_Backend.Features.Sequence;
 
@@ -106,10 +107,31 @@ public class AnalyzerForSequence
 					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generate mermaid syntax for sequence diagram....");
 					//var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
 					//var diagram = DeserializeToMermaicode(finalMermaidCode);
-					return StripMermaidFences(textReponseMermaid);
-                }
+					var mermaidCode = StripMermaidFences(textReponseMermaid);
+					// step_7 : Evaluate sequence diagram   
+					var promtEvaluateSequenceDiagram = Step7_EvaluateSequenceDiagram.PromtEvaluateSequenceDiagram(domainDescription, mermaidCode);
+					var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateSequenceDiagram);
+					var textEvaluate = responseEvaluate.Content ?? "";
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluate sequence diagram....");
+					var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
+					var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
+					// Check if the evaluation indicates the diagram is accurate
+					if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+					{
+						// If the diagram is accurate, return it
+						return mermaidCode;
+					}
+					else
+					{
+						var promtValidate = PromtForRegenSequence.GetPromtForRegenSequence(JsonConvert.SerializeObject(evaluateResult[0]), mermaidCode);
+						var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
+						var textValidate = responseValidate.Content ?? "";
+						await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modify mermaid code....");
+                        return StripMermaidFences(textValidate);
+					}
+				}
 
-            }
+			}
             catch (Newtonsoft.Json.JsonException ex)
             {
                 errorMessage = $"JSON parsing error: {ex.Message}";

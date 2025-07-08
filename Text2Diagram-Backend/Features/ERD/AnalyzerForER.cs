@@ -5,6 +5,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -13,6 +14,9 @@ using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Features.ERD.Agents;
 using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.Features.Helper;
+using Text2Diagram_Backend.Features.Sequence.Agent.Objects;
+using Text2Diagram_Backend.Features.Sequence.Agent;
+using Text2Diagram_Backend.Features.Sequence.NewWay;
 using Text2Diagram_Backend.Features.Sequence.NewWay.Objects;
 using Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc;
 using Text2Diagram_Backend.Middlewares;
@@ -48,7 +52,7 @@ public class AnalyzerForER
     /// <returns>An ER diagram ready for rendering.</returns>
     /// <exception cref="ArgumentException">Thrown when the domain description is empty.</exception>
     /// <exception cref="FormatException">Thrown when analysis fails to extract valid diagram elements.</exception>
-    public async Task<ERDiagram> AnalyzeAsync(string domainDescription)
+    public async Task<DiagramContent> AnalyzeAsync(string domainDescription)
     {
         if (string.IsNullOrWhiteSpace(domainDescription))
         {
@@ -82,14 +86,46 @@ public class AnalyzerForER
 				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify relationships....");
 				var finalIdentifyRelationships = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listRelationship = DeserializeLLMResponseFunc.DeserializeLLMResponse<Relationship>(finalIdentifyRelationships);
-
-                // Deserialize JSON to ERDiagram
-                var diagram = new ERDiagram
+				// Deserialize JSON to ERDiagram
+				var diagram = new ERDiagram
                 {
                     Entites = listCompletedEntity,
 					Relationships = listRelationship
 				};
-				return diagram;
+				string mermaidCode = GenerateMermaidCode(diagram);
+				//step 4: Validate and structure the ER diagram
+                string promtEvaluateERDiagram = EvaluateERDiagram.PromptEvaluateERDiagram(domainDescription, mermaidCode);
+				var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateERDiagram);
+				var textEvaluate = responseEvaluate.Content ?? "";
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluate ER diagram....");
+				var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
+				var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
+				// Check if the evaluation indicates the diagram is accurate
+				if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+				{
+					// If the diagram is accurate, return it
+					return new DiagramContent()
+					{
+						mermaidCode = mermaidCode,
+						diagramJson = JsonConvert.SerializeObject(diagram)
+					};
+				}
+				else
+				{
+					var promtValidate = PromtForRegenER.GetPromtForRegenER(JsonConvert.SerializeObject(evaluateResult[0]), mermaidCode);
+					var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
+					var textValidate = responseValidate.Content ?? "";
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modify mermaid code....");
+					var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textValidate);
+					// Deserialize JSON to ERDiagram
+					var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);
+					string mermaidCodeAfterEvaluate = GenerateMermaidCode(target[0]);
+					return new DiagramContent()
+					{
+						mermaidCode = mermaidCodeAfterEvaluate,
+						diagramJson = JsonConvert.SerializeObject(target[0])
+					};
+				}
             }
             catch (System.Text.Json.JsonException ex)
             {
@@ -108,7 +144,7 @@ public class AnalyzerForER
     }
 
 
-    public async Task<ERDiagram> AnalyzeForReGenAsync(string feedback, string diagramJson)
+    public async Task<DiagramContent> AnalyzeForReGenAsync(string feedback, string diagramJson)
     {
 		string promtRegenForEr = PromtForRegenER.GetPromtForRegenER(feedback, diagramJson);
 		var res = await _llmService.GenerateContentAsync(promtRegenForEr);
@@ -116,133 +152,58 @@ public class AnalyzerForER
 		var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
         // Deserialize JSON to ERDiagram
         var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);
-        return target[0];
+        string mermaidCode = GenerateMermaidCode(target[0]);
+		return new DiagramContent()
+		{
+			mermaidCode = mermaidCode,
+			diagramJson = JsonConvert.SerializeObject(target[0])
+		};
 	}
-    /// <summary>
-    /// Generates a prompt for the LLM to extract ER diagram elements from a domain description.
-    /// </summary>
-    private string GetAnalysisPrompt(string domainDescription, string? errorMessage = null)
-    {
-        var prompt = $"""
-            You are an expert Entity Relationship Analyzer tasked with extracting and structuring a domain description into Entity Relationship Diagram (ERD) components within the Text2Diagram_Backend.Features.ERD namespace.
+	/// <summary>
+	/// Generates a prompt for the LLM to extract ER diagram elements from a domain description.
+	/// </summary>
+	private string GenerateMermaidCode(ERDiagram diagram)
+	{
+		var mermaid = new StringBuilder();
 
-            ### TASK:
-            Analyze the following domain description and structure it into a complete Entity Relationship Diagram representation:
-            {domainDescription}
+		// Start ER diagram definition
+		mermaid.AppendLine("erDiagram");
 
-            ### INSTRUCTIONS:
-            - Identify entities (e.g., Student, Course) and their properties from the domain description.
-            - Infer logical properties if not provided (e.g., id as PK, name).
-            - Define relationships based on entity interactions (e.g., "Student enrolls in Course").
-            - Return only the structured JSON object in the following format, wrapped in code fences:
-           """
-            +
-           """
-            ```json
-            {
-              "Entites": [
-                {
-                  "Name": "ENTITY_NAME",
-                  "Properties": [
-                    {"Type": "string", "Name": "propName", "Role": "PK", "Description": "prop purpose"}
-                  ]
-                }
-              ],
-              "Relationships": [
-                {
-                  "SourceEntityName": "ENTITY1",
-                  "DestinationEntityName": "ENTITY2",
-                  "SourceRelationshipType": "RelationshipType",
-                  "DestinationRelationshipType": "RelationshipType",
-                  "Description": "relationship purpose"
-                }
-              ]
-            }
-            ```
-            
-            ### SCHEMA DETAILS:
-            - Entity: {{Name: string, Properties: List<Property>}}
-            - Property: {{Type: string, Name: string, Role: string, Description: string}}
-            - Relationship: {{SourceEntityName: string, DestinationEntityName: string, SourceRelationshipType: RelationshipType, DestinationRelationshipType: RelationshipType, Description: string}}
-            """
-            +
-            $"""
-            - RelationshipType: Enum with values [{string.Join(", ", ValidRelationshipTypes)}]
-            - Valid Property Roles: ["PK", "FK", ""]
-            - Ensure:
-              - Entity names are uppercase, unique, and contain no spaces or special characters (e.g., STUDENT).
-              - Property names contain no spaces (e.g., studentId).
-              - Property Type is a valid data type (e.g., string, int, float, string[]).
-              - Role is one of: PK (primary key), FK (foreign key), or empty string ("").
-              - SourceEntityName and DestinationEntityName reference valid entity names.
-              - Use only the specified RelationshipType values.
-              - The diagram has at least one entity.
-              - All fields are required and must not be null or empty (except Role, which can be an empty string).
-              - Do not include any text outside the JSON code fences.
-            """
-            +
-            """
-            ### EXAMPLE:
-            INPUT:
-            A system to manage students and courses they enroll in.
-            
-            OUTPUT:
-            ```json
-            {
-              "Entites": [
-                {
-                  "Name": "STUDENT",
-                  "Properties": [
-                    {"Type": "string", "Name": "id", "Role": "PK", "Description": "student identifier"},
-                    {"Type": "string", "Name": "name", "Role": "", "Description": "student name"}
-                  ]
-                },
-                {
-                  "Name": "COURSE",
-                  "Properties": [
-                    {"Type": "string", "Name": "id", "Role": "PK", "Description": "course identifier"},
-                    {"Type": "string", "Name": "title", "Role": "", "Description": "course title"}
-                  ]
-                }
-              ],
-              "Relationships": [
-                {
-                  "SourceEntityName": "STUDENT",
-                  "DestinationEntityName": "COURSE",
-                  "SourceRelationshipType": "ZeroOrMore",
-                  "DestinationRelationshipType": "ZeroOrMore",
-                  "Description": "enrolls in"
-                }
-              ]
-            }
-            ```
+		foreach (var entity in diagram.Entites)
+		{
+			mermaid.AppendLine($"    {entity.Name} {{");
+			foreach (var prop in entity.Properties)
+			{
+				mermaid.AppendLine($"        {prop.Type} {prop.Name.Trim().Replace(' ', '_')} {prop.Role} \"{prop.Description}\"");
+			}
+			mermaid.AppendLine("    }");
+		}
 
-            ### EDGE CASE EXAMPLE:
-            INPUT:
-            A system with only departments.
-            
-            OUTPUT:
-            ```json
-            {
-              "Entites": [
-                {
-                  "Name": "DEPARTMENT",
-                  "Properties": [
-                    {"Type": "string", "Name": "id", "Role": "PK", "Description": "department identifier"},
-                    {"Type": "string", "Name": "name", "Role": "", "Description": "department name"}
-                  ]
-                }
-              ],
-              "Relationships": []
-            }
-            ```
-            """;
+		foreach (var relation in diagram.Relationships)
+		{
+			string sourceConnector = GetEdgeConnector(relation.DestinationRelationshipType, true);
+			string destConnector = GetEdgeConnector(relation.SourceRelationshipType, false);
+			mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
+		}
 
-        if (errorMessage != null)
-        {
-            prompt += $"\n\n### PREVIOUS ERROR:\n{errorMessage}\nPlease correct the output to address this error and ensure the diagram meets all schema requirements.";
-        }
+		return mermaid.ToString();
+	}
 
-        return prompt;
-    }
+	/// <summary>
+	/// Determines the appropriate connector symbol for a relationship type.
+	/// </summary>
+	/// <param name="type">The relationship type to evaluate</param>
+	/// <param name="isLeft">Indicates if this is the left (source) side of the relationship</param>
+	/// <returns>A string representing the Mermaid.js connector symbol</returns>
+	private string GetEdgeConnector(RelationshipType type, bool isLeft)
+	{
+		return type switch
+		{
+			RelationshipType.ZeroOrOne => isLeft ? "|o" : "o|",
+			RelationshipType.ExactlyOne => "||",
+			RelationshipType.ZeroOrMore => isLeft ? "}o" : "o{",
+			RelationshipType.OneOrMore => isLeft ? "}|" : "|{",
+			_ => isLeft ? "|o" : "o|"
+		};
+	}
 }

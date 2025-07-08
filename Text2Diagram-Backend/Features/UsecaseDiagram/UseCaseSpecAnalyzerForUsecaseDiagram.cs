@@ -157,10 +157,25 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
         var prompt = getPromptForRegen(feedback, diagramJson);
         var response = await _llmService.GenerateContentAsync(prompt);
         logger.LogInformation("Use Case Regeneration Response: {response}", response.Content);
-        //var jsonResult = Helpers.ValidateJson(response.Content);
-        //logger.LogInformation(" Raw response regen json:\n{Content}", jsonResult);
-        string? errorMessage = null;
-        var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(response.Content, new JsonSerializerOptions
+        string errorMessage = string.Empty;
+        string jsonResult = string.Empty;
+        var codeFenceMatch = Regex.Match(response.Content, @"```json\s*(.*?)\s*```", RegexOptions.Singleline);
+        if (codeFenceMatch.Success)
+        {
+            jsonResult = codeFenceMatch.Groups[1].Value.Trim();
+        }
+        else
+        {
+            // Fallback to raw JSON
+            var rawJsonMatch = Regex.Match(response.Content, @"\{[\s\S]*\}", RegexOptions.Singleline);
+            if (!rawJsonMatch.Success)
+            {
+                errorMessage = "No valid JSON found in response. Expected JSON in code fences (```json ... ```) or raw JSON object.";
+                logger.LogWarning(" Raw response:\n{Content}", errorMessage);
+            }
+            jsonResult = rawJsonMatch.Value.Trim();
+        }
+        var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             AllowTrailingCommas = true,

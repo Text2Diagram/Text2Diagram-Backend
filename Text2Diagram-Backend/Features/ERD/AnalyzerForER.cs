@@ -101,18 +101,19 @@ public class AnalyzerForER
 				var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
 				var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
 				// Check if the evaluation indicates the diagram is accurate
+				string diagramJson = JsonConvert.SerializeObject(diagram);
 				if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
 				{
 					// If the diagram is accurate, return it
 					return new DiagramContent()
 					{
 						mermaidCode = mermaidCode,
-						diagramJson = JsonConvert.SerializeObject(diagram)
+						diagramJson = diagramJson
 					};
 				}
 				else
 				{
-					var promtValidate = PromtForRegenER.GetPromtForRegenER(JsonConvert.SerializeObject(evaluateResult[0]), mermaidCode);
+					var promtValidate = PromtForRegenER.GetPromtForRegenER(JsonConvert.SerializeObject(evaluateResult[0]), diagramJson);
 					var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
 					var textValidate = responseValidate.Content ?? "";
 					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modify mermaid code....");

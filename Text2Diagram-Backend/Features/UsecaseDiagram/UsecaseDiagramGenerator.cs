@@ -7,6 +7,7 @@ using Text2Diagram_Backend.Data;
 using Text2Diagram_Backend.Data.Models;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Separate;
+using Text2Diagram_Backend.Migrations;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -41,7 +42,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         {
             // Extract and generate diagram structure directly from input
             var diagram = await analyzer.AnalyzeAsync(input);            // Generate Mermaid syntax
-            // Generate Mermaid syntax
+            // Generate planUML syntax
             string planUMLCode = GeneratePlantUMLCode(diagram);
 
             logger.LogInformation("Generated PlanUML Code:\n{PlantUMLCode}", planUMLCode);
@@ -63,21 +64,45 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
 	public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
 	{
         logger.LogInformation("Regenerating flowchart with feedback: {Feedback}", feedback);
-
-        var response = await ApplyCommandsAsync(feedback);
-        var feedbackNode = Helpers.ValidateJson(response);
-        var options = new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true,
-            AllowTrailingCommas = true,
-            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-        };
-        var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(diagramJson, options);
-        var instruction = System.Text.Json.JsonSerializer.Deserialize<Instructions>(feedbackNode, options);
-        var newUseCaseDiagram = Helpers.ApplyInstructions(diagram, instruction);
-        var planUMLCode = GeneratePlantUMLCode(newUseCaseDiagram);
-        logger.LogInformation("Regenerated Use Case Diagram with feedback: {Feedback}", feedback);
-        return new DiagramContent();
+            // Extract and generate diagram structure directly from input
+            var diagram = await analyzer.AnalyzeRegenAsync(feedback, diagramJson);          
+            // Generate planUML syntax
+            string planUMLCode = GeneratePlantUMLCode(diagram);
+
+            logger.LogInformation("Generated PlanUML Code:\n{PlantUMLCode}", planUMLCode);
+
+            // Validate and correct if needed
+            return new DiagramContent
+            {
+                mermaidCode = planUMLCode,
+                diagramJson = JsonConvert.SerializeObject(diagram)
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error generating Usecase diagram");
+            throw;
+        }
+
+        //var response = await ApplyCommandsAsync(feedback);
+        //var feedbackNode = Helpers.ValidateJson(response);
+        //var options = new JsonSerializerOptions
+        //{
+        //    PropertyNameCaseInsensitive = true,
+        //    AllowTrailingCommas = true,
+        //    Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        //};
+        //var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(diagramJson, options);
+        //var instruction = System.Text.Json.JsonSerializer.Deserialize<Instructions>(feedbackNode, options);
+        //var newUseCaseDiagram = Helpers.ApplyInstructions(diagram, instruction);
+        //var planUMLCode = GeneratePlantUMLCode(newUseCaseDiagram);
+        //return new DiagramContent()
+        //{
+        //    mermaidCode = planUMLCode,
+        //    diagramJson = JsonConvert.SerializeObject(newUseCaseDiagram)
+        //};
 	}
 
     public string GeneratePlantUMLCode(UseCaseDiagram diagram)

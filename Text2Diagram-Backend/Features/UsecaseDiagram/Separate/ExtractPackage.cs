@@ -38,27 +38,28 @@
                 {
                   "Packages": [
                     {
-                      "Name": "BOUNDARY_NAME",
+                      "Name": "BOUNDARY NAME",
                       "Actors": [
                         { "Name": "ACTOR_NAME_1" },
                         { "Name": "ACTOR_NAME_2" }
                       ],
                       "UseCases": [
-                        { "Name": "USE_CASE_NAME_1" },
-                        { "Name": "USE_CASE_NAME_2" }
+                        { "Name": "USE CASE NAME 1" },
+                        { "Name": "USE CASE NAME 2" }
                       ],
                       "Associations": [
-                        { "Actor": "ACTOR_NAME", "UseCase": "USE_CASE_NAME" }
+                        { "Actor": "ACTOR_NAME", "UseCase": "USE CASE NAME" }
                       ],
                       "Includes": [
-                        { "BaseUseCase": "BASE_USE_CASE_NAME", "IncludedUseCase": "INCLUDED_USE_CASE_NAME" }
+                        { "BaseUseCase": "BASE USE CASE NAME", "IncludedUseCase": "INCLUDED USE CASE NAME" }
                       ],
                       "Extends": [
-                        { "BaseUseCase": "BASE_USE_CASE_NAME", "ExtendedUseCase": "EXTENDED_USE_CASE_NAME" }
+                        { "BaseUseCase": "BASE USE CASE NAME", "ExtendedUseCase": "EXTENDED USE CASE NAME" }
                       ]
                     }
                   ]
                 }
+                ```
                 """
                     +
                 """

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Text.Json.Nodes;
@@ -11,6 +11,8 @@ using Microsoft.Extensions.AI;
 using Microsoft.AspNetCore.SignalR;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Middlewares;
+using Text2Diagram_Backend.Features.Helper;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -125,7 +127,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 logger.LogWarning(" Raw response:\n{Content}", errorMessage);
             }
 
-            logger.LogInformation(" Raw response:\n{Content}", jsonResult);
+            logger.LogInformation(" Raw response json:\n{Content}", jsonResult);
 
             var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
             {
@@ -137,15 +139,9 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             if (diagram == null)
             {
                 errorMessage = "Deserialization returned null.";
-                logger.LogWarning(" Raw response:\n{Content}", errorMessage);
+                logger.LogWarning(" Raw response ex:\n{Content}", errorMessage);
             }
-            foreach (var package in diagram.Packages)
-            {
-                if (package.Actors.Count == 0 || package.UseCases.Count == 0) 
-                {
-                    diagram.Packages.Remove(package);
-                }
-            }
+            diagram.Packages.RemoveAll(p => p.Actors.Count == 0 || p.UseCases.Count == 0);
             return diagram;
 
         }
@@ -156,6 +152,96 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
         }
 
     }
+    public async Task<UseCaseDiagram> AnalyzeRegenAsync(string feedback, string diagramJson)
+    {
+        var prompt = getPromptForRegen(feedback, diagramJson);
+        var response = await _llmService.GenerateContentAsync(prompt);
+        logger.LogInformation("Use Case Regeneration Response: {response}", response.Content);
+        //var jsonResult = Helpers.ValidateJson(response.Content);
+        //logger.LogInformation(" Raw response regen json:\n{Content}", jsonResult);
+        string? errorMessage = null;
+        var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(response.Content, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            AllowTrailingCommas = true,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        });
 
+        if (diagram == null)
+        {
+            errorMessage = "Deserialization returned null.";
+            logger.LogWarning(" Raw response ex:\n{Content}", errorMessage);
+        }
+        diagram.Packages.RemoveAll(p => p.Actors.Count == 0 || p.UseCases.Count == 0);
+        return diagram;
+    }
+
+
+    private static string getPromptForRegen(string feedback, string diagramJson)
+    {
+        string prompt = $"""
+        You are an expert assistant that helps regenerate a Use Case Diagram based on user feedback.
+
+        You will receive:
+        1. The current Use Case Diagram as JSON.
+        2. A feedback message from the user that may suggest adding, removing, or updating actors, use cases, associations, packages, includes, or extends.
+
+        Your task is to:
+        - Analyze the feedback carefully.
+        - Modify the given diagram accordingly.
+        - Return a new, updated Use Case Diagram that reflects only the changes described in the feedback.
+        - Do not remove or alter unrelated parts of the diagram.
+        - Preserve the existing structure and content as much as possible.
+
+        ---
+
+        📌 INPUT FORMAT:
+
+        🧾 Current Use Case Diagram:
+        {diagramJson}
+
+        🗣 User Feedback:
+        {feedback}
+        """
+        + """
+        ---
+
+        📌 OUTPUT FORMAT:
+
+        Return only the updated Use Case Diagram in the following JSON structure:
+
+        ```json
+        {
+          "Packages": [
+            {
+              "Name": "BOUNDARY NAME",
+              "Actors": [
+                { "Name": "ACTOR_NAME_1" },
+                { "Name": "ACTOR_NAME_2" }
+              ],
+              "UseCases": [
+                { "Name": "USE CASE NAME 1" },
+                { "Name": "USE CASE NAME 2" }
+              ],
+              "Associations": [
+                { "Actor": "ACTOR_NAME", "UseCase": "USE CASE NAME" }
+              ],
+              "Includes": [
+                { "BaseUseCase": "BASE USE CASE NAME", "IncludedUseCase": "INCLUDED USE CASE NAME" }
+              ],
+              "Extends": [
+                { "BaseUseCase": "BASE USE CASE NAME", "ExtendedUseCase": "EXTENDED USE CASE NAME" }
+              ]
+            }
+          ]
+        }
+        ```
+
+        ✅ Your response must be a valid, minified JSON object of the updated diagram.
+        ❌ Do not explain, comment, or return markdown formatting (e.g., no ```json block).
+        ❌ Do not return unchanged diagram unless the feedback explicitly says ""no change"".
+        """;
+        return prompt;
+    }
 }
 

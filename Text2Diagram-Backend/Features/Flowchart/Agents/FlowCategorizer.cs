@@ -9,15 +9,15 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class FlowCategorizer
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
     private readonly ILogger<FlowCategorizer> _logger;
-    private readonly AiTogetherService _aiTogetherService;
 
-    public FlowCategorizer(ILLMService llmService, ILogger<FlowCategorizer> logger, AiTogetherService aiTogetherService)
+    public FlowCategorizer(
+        ILLMService1 llmService,
+        ILogger<FlowCategorizer> logger)
     {
         _llmService = llmService;
         _logger = logger;
-        _aiTogetherService = aiTogetherService;
     }
 
     private FlowCategories ExtractJsonFlows(string textContent)

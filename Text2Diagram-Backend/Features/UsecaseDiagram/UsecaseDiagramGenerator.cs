@@ -16,13 +16,13 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
     private readonly ILogger<UsecaseDiagramGenerator> logger;
     private readonly UseCaseSpecAnalyzerForUsecaseDiagram analyzer;
     private readonly ApplicationDbContext dbContext;
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
 
     public UsecaseDiagramGenerator(
         ILogger<UsecaseDiagramGenerator> logger,
         UseCaseSpecAnalyzerForUsecaseDiagram analyzer,
         ApplicationDbContext dbContext,
-        ILLMService llmService)
+        ILLMService1 llmService)
     {
         this.logger = logger;
         this.analyzer = analyzer;

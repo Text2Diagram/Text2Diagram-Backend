@@ -10,18 +10,21 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class DecisionNodeInserter
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
+    private readonly ILLMService2 _llmService2;
     private readonly AiTogetherService _aiTogetherService;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<DecisionNodeInserter> _logger;
 
     public DecisionNodeInserter(
-        ILLMService llmService,
+        ILLMService1 llmService,
+        ILLMService2 llmService2,
         AiTogetherService aiTogetherService,
         IHubContext<ThoughtProcessHub> hubContext,
         ILogger<DecisionNodeInserter> logger)
     {
         _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+        _llmService2 = llmService2;
         _aiTogetherService = aiTogetherService;
         _hubContext = hubContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -171,7 +174,7 @@ public class DecisionNodeInserter
             """
             Return JSON: { "DecisionLabel": "" }
             """;
-        var decisionResponse = await _llmService.GenerateContentAsync(decisionPrompt);
+        var decisionResponse = await _llmService2.GenerateContentAsync(decisionPrompt);
 
         var decisionJson = FlowchartHelpers.ValidateJson(decisionResponse.Content);
 

@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
 
 namespace Text2Diagram_Backend.LLMGeminiService;
 
@@ -6,9 +7,10 @@ public class GoogleAuthHandler : DelegatingHandler
 {
     private readonly GoogleServiceAccountTokenProvider _tokenProvider;
 
-    public GoogleAuthHandler(GoogleServiceAccountTokenProvider tokenProvider)
+    public GoogleAuthHandler(IOptionsMonitor<GeminiOptions> optionsMonitor, string configName)
     {
-        _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
+        var options = optionsMonitor.Get(configName);
+        _tokenProvider = new GoogleServiceAccountTokenProvider(options.ServiceAccountJsonPath, "https://www.googleapis.com/auth/cloud-platform");
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

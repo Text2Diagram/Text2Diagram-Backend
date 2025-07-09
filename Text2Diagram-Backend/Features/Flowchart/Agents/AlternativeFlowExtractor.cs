@@ -7,13 +7,16 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class AlternativeFlowExtractor
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
+    private readonly ILLMService2 _llmService2;
     private readonly ILogger<AlternativeFlowExtractor> _logger;
 
-    public AlternativeFlowExtractor(ILLMService llmService,
+    public AlternativeFlowExtractor(ILLMService1 llmService,
+        ILLMService2 llmService2,
         ILogger<AlternativeFlowExtractor> logger)
     {
         _llmService = llmService;
+        _llmService2 = llmService2;
         _logger = logger;
     }
 
@@ -134,7 +137,7 @@ public class AlternativeFlowExtractor
         ]
         """;
 
-        var response = await _llmService.GenerateContentAsync(prompt);
+        var response = await _llmService2.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var edges = FlowchartHelpers.ExtractEdges(textContent);

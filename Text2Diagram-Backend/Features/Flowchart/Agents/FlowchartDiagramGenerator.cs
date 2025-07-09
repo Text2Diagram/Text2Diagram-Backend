@@ -12,7 +12,7 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 public class FlowchartDiagramGenerator : IDiagramGenerator
 {
     private readonly ILogger<FlowchartDiagramGenerator> _logger;
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
     private readonly UseCaseSpecAnalyzerForFlowchart _analyzer;
     private readonly DecisionNodeInserter _decisionNodeInserter;
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
@@ -21,7 +21,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
-        ILLMService llmService,
+        ILLMService1 llmService,
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
         RejoinPointIdentifier rejoinPointIdentifier,
@@ -59,11 +59,14 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
 
         var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
+
+
+        modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
         var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
 
+
         await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating diagram...");
-        //await Task.Delay(60000);
-        //var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
+        var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
 
         string jsonString = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
         {

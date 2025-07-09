@@ -26,13 +26,13 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
     private readonly Kernel kernel;
     private readonly ILogger<UseCaseSpecAnalyzerForUsecaseDiagram> logger;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
 
     public UseCaseSpecAnalyzerForUsecaseDiagram(
         Kernel kernel,
         ILogger<UseCaseSpecAnalyzerForUsecaseDiagram> logger,
         IHubContext<ThoughtProcessHub> hubContext,
-        ILLMService service)
+        ILLMService1 service)
     {
         this.kernel = kernel;
         this.logger = logger;

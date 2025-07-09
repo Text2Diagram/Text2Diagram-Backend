@@ -5,20 +5,20 @@ using Text2Diagram_Backend.Common.Abstractions;
 
 namespace Text2Diagram_Backend.LLMGeminiService
 {
-    public class GeminiService : ILLMService
+    public class GeminiService2 : ILLMService2
     {
         private readonly GeminiOptions _options;
         private readonly HttpClient _httpClient;
 
-        public GeminiService(
+        public GeminiService2(
             IOptions<GeminiOptions> options,
-            IHttpClientFactory httpClientFactory)
+            HttpClient httpClient)
         {
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             if (string.IsNullOrEmpty(_options.ProjectId) || string.IsNullOrEmpty(_options.Region) || string.IsNullOrEmpty(_options.ModelId))
                 throw new ArgumentException("GeminiOptions must have valid ProjectId, Region, and ModelId.");
 
-            _httpClient = httpClientFactory.CreateClient("GeminiClient");
+            _httpClient = httpClient;
         }
 
         public async Task<LLMResponse> GenerateContentAsync(string prompt)

@@ -6,10 +6,10 @@ namespace Text2Diagram_Backend.Features.Flowchart;
 
 public class UseCaseSpecGenerator
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
 
     public UseCaseSpecGenerator(
-        ILLMService llmService)
+        ILLMService1 llmService)
     {
         _llmService = llmService;
     }

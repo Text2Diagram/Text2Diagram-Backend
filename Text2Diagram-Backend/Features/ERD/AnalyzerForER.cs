@@ -31,13 +31,13 @@ public class AnalyzerForER
 {
     private readonly Kernel kernel;
     private readonly ILogger<AnalyzerForER> logger;
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
 	private const int MaxRetries = 1;
     private static readonly string[] ValidRelationshipTypes = Enum.GetNames(typeof(RelationshipType));
     private static readonly string[] ValidPropertyRoles = new[] { "PK", "FK", "" };
 	private readonly IHubContext<ThoughtProcessHub> _hubContext;
 
-	public AnalyzerForER(Kernel kernel, ILogger<AnalyzerForER> logger, ILLMService lLMService, IHubContext<ThoughtProcessHub> hubContext)
+	public AnalyzerForER(Kernel kernel, ILogger<AnalyzerForER> logger, ILLMService1 lLMService, IHubContext<ThoughtProcessHub> hubContext)
     {
         this.kernel = kernel;
         this.logger = logger;

@@ -10,11 +10,11 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class RejoinPointIdentifier
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<RejoinPointIdentifier> _logger;
 
-    public RejoinPointIdentifier(ILLMService llmService,
+    public RejoinPointIdentifier(ILLMService1 llmService,
         IHubContext<ThoughtProcessHub> hubContext,
                                  ILogger<RejoinPointIdentifier> logger)
     {

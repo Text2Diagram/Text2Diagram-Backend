@@ -29,9 +29,9 @@ public class AnalyzerForSequence
     private readonly Kernel kernel;
     private readonly ILogger<AnalyzerForSequence> logger;
     private const int MaxRetries = 1;
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
     private IHubContext<ThoughtProcessHub> _hubContext;
-    public AnalyzerForSequence(Kernel kernel, ILogger<AnalyzerForSequence> logger, ILLMService llmService
+    public AnalyzerForSequence(Kernel kernel, ILogger<AnalyzerForSequence> logger, ILLMService1 llmService
         , IHubContext<ThoughtProcessHub> hubContext)
     {
         this.kernel = kernel;

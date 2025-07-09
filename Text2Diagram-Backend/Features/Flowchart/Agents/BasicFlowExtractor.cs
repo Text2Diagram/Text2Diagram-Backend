@@ -9,16 +9,19 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class BasicFlowExtractor
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
+    private readonly ILLMService2 _llmService2;
     private readonly AiTogetherService _aiTogetherService;
     private readonly ILogger<BasicFlowExtractor> _logger;
 
     public BasicFlowExtractor(
-        ILLMService llmService,
+        ILLMService1 llmService,
+        ILLMService2 llmService2,
         AiTogetherService aiTogetherService,
         ILogger<BasicFlowExtractor> logger)
     {
         _llmService = llmService;
+        _llmService2 = llmService2;
         _aiTogetherService = aiTogetherService;
         _logger = logger;
     }
@@ -134,7 +137,7 @@ public class BasicFlowExtractor
             ```
             """;
 
-        var response = await _llmService.GenerateContentAsync(prompt);
+        var response = await _llmService2.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var edges = FlowchartHelpers.ExtractEdges(textContent);

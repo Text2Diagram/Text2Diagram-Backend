@@ -6,13 +6,16 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class ExceptionFlowExtractor
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
+    private readonly ILLMService2 _llmService2;
     private readonly ILogger<ExceptionFlowExtractor> _logger;
 
-    public ExceptionFlowExtractor(ILLMService llmService,
+    public ExceptionFlowExtractor(ILLMService1 llmService,
+        ILLMService2 llmService2,
         ILogger<ExceptionFlowExtractor> logger)
     {
         _llmService = llmService;
+        _llmService2 = llmService2;
         _logger = logger;
     }
 
@@ -164,7 +167,7 @@ public class ExceptionFlowExtractor
             """
             ;
 
-        var response = await _llmService.GenerateContentAsync(prompt);
+        var response = await _llmService2.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
         _logger.LogDebug("LLM response for edges:\n{0}", textContent);
 

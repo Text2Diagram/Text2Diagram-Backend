@@ -13,7 +13,7 @@ public class UseCaseSpecAnalyzerForFlowchart
     private readonly BasicFlowExtractor _basicFlowExtractor;
     private readonly AlternativeFlowExtractor _alternativeFlowExtractor;
     private readonly ExceptionFlowExtractor _exceptionFlowExtractor;
-    private readonly ILLMService _llmService;
+    private readonly ILLMService1 _llmService;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly AiTogetherService _aiTogetherService;
     private readonly ILogger<UseCaseSpecAnalyzerForFlowchart> _logger;
@@ -23,7 +23,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         BasicFlowExtractor basicFlowExtractor,
         AlternativeFlowExtractor alternativeFlowExtractor,
         ExceptionFlowExtractor exceptionFlowExtractor,
-        ILLMService llmService,
+        ILLMService1 llmService,
         IHubContext<ThoughtProcessHub> hubContext,
         AiTogetherService aiTogetherService,
         ILogger<UseCaseSpecAnalyzerForFlowchart> logger)

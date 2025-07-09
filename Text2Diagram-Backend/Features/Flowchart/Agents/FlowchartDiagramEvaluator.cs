@@ -6,12 +6,12 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class FlowchartDiagramEvaluator
 {
-    private readonly ILLMService _llmService;
+    private readonly ILLMService2 _llmService2;
     private readonly ILogger<FlowchartDiagramEvaluator> _logger;
 
-    public FlowchartDiagramEvaluator(ILLMService llmService, ILogger<FlowchartDiagramEvaluator> logger)
+    public FlowchartDiagramEvaluator(ILLMService2 llmService2, ILogger<FlowchartDiagramEvaluator> logger)
     {
-        _llmService = llmService;
+        _llmService2 = llmService2;
         _logger = logger;
     }
 
@@ -77,7 +77,7 @@ public class FlowchartDiagramEvaluator
             
             """;
 
-        var response = await _llmService.GenerateContentAsync(prompt);
+        var response = await _llmService2.GenerateContentAsync(prompt);
         var json = FlowchartHelpers.ValidateJson(response.Content);
         _logger.LogInformation("Evaluating flowchart diagram: {Response}", response.Content);
         var correctedFlowchart = JsonSerializer.Deserialize<FlowchartDiagram>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });

@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
 using Newtonsoft.Json.Serialization;
@@ -87,24 +89,53 @@ builder.Services.AddScoped<UseCaseSpecGenerator>();
 builder.Services.AddSingleton<FirebaseTokenVerifier>();
 
 // Add LLM Gemini Service
-builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection("Gemini"));
-builder.Services.AddScoped<GoogleServiceAccountTokenProvider>(sp =>
+builder.Services.Configure<GeminiOptions>("Gemini1", builder.Configuration.GetSection("Gemini1"));
+builder.Services.Configure<GeminiOptions>("Gemini2", builder.Configuration.GetSection("Gemini2"));
+
+builder.Services.AddHttpClient("GeminiClient_Gemini1")
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(5))
+    .AddHttpMessageHandler(sp =>
+    {
+        return new GoogleAuthHandler(
+            sp.GetRequiredService<IOptionsMonitor<GeminiOptions>>(),
+            "Gemini1"
+        );
+    });
+
+builder.Services.AddHttpClient("GeminiClient_Gemini2")
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(5))
+    .AddHttpMessageHandler(sp =>
+    {
+        return new GoogleAuthHandler(
+            sp.GetRequiredService<IOptionsMonitor<GeminiOptions>>(),
+            "Gemini2"
+        );
+    });
+
+builder.Services.AddTransient<ILLMService1>(sp =>
 {
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var serviceAccountPath = configuration["Gemini:ServiceAccountJsonPath"]
-        ?? throw new ArgumentNullException("Gemini:ServiceAccountJsonPath is not configured");
-    var audience = "https://www.googleapis.com/auth/cloud-platform";
-    return new GoogleServiceAccountTokenProvider(serviceAccountPath, audience);
+    var optionsMonitor = sp.GetRequiredService<IOptionsSnapshot<GeminiOptions>>();
+    var options = optionsMonitor.Get("Gemini1");
+
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("GeminiClient_Gemini1");
+
+    return new GeminiService1(Options.Create(options), httpClient);
 });
 
-builder.Services.AddHttpClient("GeminiClient", client =>
+builder.Services.AddTransient<ILLMService2>(sp =>
 {
-    client.Timeout = TimeSpan.FromMinutes(5);
-}).AddHttpMessageHandler<GoogleAuthHandler>();
+    var optionsMonitor = sp.GetRequiredService<IOptionsSnapshot<GeminiOptions>>();
+    var options = optionsMonitor.Get("Gemini2");
 
-builder.Services.AddTransient<GoogleAuthHandler>();
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("GeminiClient_Gemini2");
 
-builder.Services.AddTransient<ILLMService, GeminiService>();
+    return new GeminiService2(Options.Create(options), httpClient);
+});
+
+
+
 // Register flowchart components
 builder.Services.AddScoped<FlowchartDiagramGenerator>();
 builder.Services.AddScoped<ERDiagramGenerator>();

@@ -58,10 +58,16 @@ public class AnalyzerForSequence
                 //var chatService = kernel.GetRequiredService<IChatCompletionService>();
                 //var chatHistory = new ChatHistory();
                 var promtGetFlow = Step1_ParseFileToGetFlow.GenPromtInStep1(domainDescription);
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Pre-processing the input...");
+				var responseGetFlowInStep1 = await _llmService.GenerateContentAsync(promtGetFlow);
+				//chatHistory.AddUserMessage(promtGetFlow);
+				//var responseGetFlowInStep1 = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                 var responseGetFlowInStep1 = await _llmService.GenerateContentAsync(promtGetFlow);
                 //chatHistory.AddUserMessage(promtGetFlow);
                 //var responseGetFlowInStep1 = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                 var textGetFlow = responseGetFlowInStep1.Content ?? "";
+				// Extract JSON from the response
+				var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
                 await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Pre-process the input....");
                 // Extract JSON from the response
                 var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
@@ -71,8 +77,11 @@ public class AnalyzerForSequence
                     //step_2 : Combine flows 
                     var promtCombineFlow = Step2_CombineFlow.CombineFlowsPromt(JsonConvert.SerializeObject(item));
                     //chatHistory.AddUserMessage(promtCombineFlow);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Combining flows...");
                     var responseCombineFlow = await _llmService.GenerateContentAsync(promtCombineFlow);
                     var textContentCombineflow = responseCombineFlow.Content ?? "";
+					// Extract JSON from the response
+					var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
                     await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Combine flows....");
                     // Extract JSON from the response
                     var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
@@ -82,7 +91,10 @@ public class AnalyzerForSequence
                     var promtIdentityParticipant = Step3_IdentifyParticipant.IdentifyParticipants(strCombineFlow);
                     //chatHistory.AddUserMessage(promtIdentityParticipant);
                     //var responseParticipants = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying participants...");
                     var responseParticipants = await _llmService.GenerateContentAsync(promtIdentityParticipant);
+					var textContentParticipants = responseParticipants.Content ?? "";
+					var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
                     var textContentParticipants = responseParticipants.Content ?? "";
                     await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify participants....");
                     var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
@@ -91,8 +103,10 @@ public class AnalyzerForSequence
                     var promtIdentifyConditions = Step4_IdentifyCondition.IdentifyCondition(strCombineFlow);
                     //chatHistory.AddUserMessage(promtIdentifyConditions);
                     //var responseConditions = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying conditions...");
                     var responseConditions = await _llmService.GenerateContentAsync(promtIdentifyConditions);
                     var textContentConditions = responseConditions.Content ?? "";
+					var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
                     await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify conditions....");
                     var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
                     var listConditions = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepControlTypeDto>(finalConditions);
@@ -104,6 +118,31 @@ public class AnalyzerForSequence
                     //chatHistory.AddUserMessage(promtFinalGenerateMermaid);
                     var responseMermaid = await _llmService.GenerateContentAsync(promtFinalGenerateMermaid);
                     var textReponseMermaid = responseMermaid.Content ?? "";
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating sequence diagram...");
+					//var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
+					//var diagram = DeserializeToMermaicode(finalMermaidCode);
+					var mermaidCode = StripMermaidFences(textReponseMermaid);
+					// step_7 : Evaluate sequence diagram   
+					var promtEvaluateSequenceDiagram = Step7_EvaluateSequenceDiagram.PromtEvaluateSequenceDiagram(domainDescription, mermaidCode);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating sequence diagram...");
+					var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateSequenceDiagram);
+					var textEvaluate = responseEvaluate.Content ?? "";
+					var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
+					var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
+					// Check if the evaluation indicates the diagram is accurate
+					if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+					{
+                        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated sequence diagram successfully!");
+                        // If the diagram is accurate, return it
+                        return mermaidCode;
+					}
+					else
+					{
+						var promtValidate = PromtForRegenSequence.GetPromtForRegenSequence(JsonConvert.SerializeObject(evaluateResult[0]), mermaidCode);
+						await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modifying sequence diagram...");
+						var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
+						var textValidate = responseValidate.Content ?? "";
+                        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated sequence diagram successfully!");
                     await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generate mermaid syntax for sequence diagram....");
                     //var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
                     //var diagram = DeserializeToMermaicode(finalMermaidCode);

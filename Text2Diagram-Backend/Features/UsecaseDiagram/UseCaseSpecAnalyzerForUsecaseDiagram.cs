@@ -13,6 +13,11 @@ using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Middlewares;
 using Text2Diagram_Backend.Features.Helper;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Text2Diagram_Backend.Features.ERD.Agents;
+using Text2Diagram_Backend.Features.ERD.Components;
+using Text2Diagram_Backend.Features.Sequence.Agent.Objects;
+using Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -57,28 +62,28 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
         try
         {
             //Get actors
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extract Actors from Specification...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting actors from specification...");
             string promtActor = ExtractActor.GetExtractActorPrompt(useCaseSpec);
             var actorResult = await _llmService.GenerateContentAsync(promtActor);
             var actorJsonNode = Helpers.ValidateJson(actorResult.Content);
             var actors = ExtractActor.GetActors(actorJsonNode);
 
             //Get usecases
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extract Use Cases from Specification...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting use cases from specification...");
             string promtUseCase = ExtractUsecase.GetExtractUseCasePrompt(useCaseSpec);
             var usecaseResult = await _llmService.GenerateContentAsync(promtUseCase);
             var usecaseJsonNode = Helpers.ValidateJson(usecaseResult.Content);
             var usecases = ExtractUsecase.GetUseCases(usecaseJsonNode);
 
             //Get associations
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extract Associations between Actors and Usecases...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting associations between actors and use cases...");
             string promtAssociation = ExtractAssociation.GetExtractAssociationPrompt(useCaseSpec, actors, usecases);
             var associationResult = await _llmService.GenerateContentAsync(promtAssociation);
             var associationJsonNode = Helpers.ValidateJson(associationResult.Content);
             var associations = ExtractAssociation.GetAssociations(associationJsonNode);
 
             // Get relationships
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extract Relationships of UseCases...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting relationships between use cases...");
             string promptRelationship = ExtractRelationship.GetExtractRelationshipPrompt(useCaseSpec, usecases);
             var relationshipResult = await _llmService.GenerateContentAsync(promptRelationship);
             var relationshipJsonNode = Helpers.ValidateJson(relationshipResult.Content);
@@ -86,7 +91,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             var extends = ExtractRelationship.GetExtends(relationshipJsonNode);
 
             //Get packages
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extract Packages...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting packages...");
             string? errorMessage = null;
             var combinedJson = new
             {
@@ -97,12 +102,13 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 Extends = extends.Select(e => new { e.BaseUseCase, e.ExtendedUseCase }).ToList()
             };
 
-            string combinedJsonInput = JsonSerializer.Serialize(combinedJson, new JsonSerializerOptions
+            string combinedJsonInput = System.Text.Json.JsonSerializer.Serialize(combinedJson, new JsonSerializerOptions
             {
                 WriteIndented = true
             });
 
             string promptPackage = ExtractPackage.GetExtractPackagePrompt(combinedJsonInput);
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating usecase diagram...");
             var packageResult = await _llmService.GenerateContentAsync(promptPackage);
             string jsonResult;
             var codeFenceMatch = Regex.Match(packageResult.Content, @"```json\s*(.*?)\s*```", RegexOptions.Singleline);
@@ -129,7 +135,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
 
             logger.LogInformation(" Raw response json:\n{Content}", jsonResult);
 
-            var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
+            var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
                 AllowTrailingCommas = true,
@@ -141,9 +147,28 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 errorMessage = "Deserialization returned null.";
                 logger.LogWarning(" Raw response ex:\n{Content}", errorMessage);
             }
-            diagram.Packages.RemoveAll(p => p.Actors.Count == 0 || p.UseCases.Count == 0);
-            return diagram;
-
+            else
+            {
+                diagram.Packages.RemoveAll(p => p.Actors.Count == 0 || p.UseCases.Count == 0);
+            }
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating usecase diagram...");
+            var promptEvaluate = EvaluateUsecaseDiagram.PromptEvaluateUsecaseDiagram(useCaseSpec, jsonResult);
+            var evaluationResult = await _llmService.GenerateContentAsync(promptEvaluate);
+            var evaluationJsonResult = ExtractJsonFromTextHelper.ExtractJsonFromText(evaluationResult.Content);
+            Console.WriteLine("Evaluation JSON Result: " + evaluationJsonResult);
+            var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(evaluationJsonResult);
+            if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+            {
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated usecase diagram successfully!");
+                return diagram;
+            }
+            else
+            {
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modifying usecase diagram...");
+                diagram = await AnalyzeRegenAsync(JsonConvert.SerializeObject(evaluateResult[0]), jsonResult);
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated usecase diagram successfully!");
+                return diagram;
+            }
         }
         catch (Exception ex)
         {
@@ -175,7 +200,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             }
             jsonResult = rawJsonMatch.Value.Trim();
         }
-        var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
+        var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             AllowTrailingCommas = true,

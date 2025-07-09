@@ -40,7 +40,7 @@ public class UseCaseSpecAnalyzerForFlowchart
 
     public async Task<List<Flow>> AnalyzeAsync(string useCaseSpec)
     {
-        await _hubContext.Clients.All.SendAsync("StepGenerated", "Extracting flows description from use case specification...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting flows description from use case specification...");
         var (basicFlowDescription, alternativeFlowsDescription, exceptionFlowsDescription) = await _flowCategorizer.CategorizeFlowsAsync(useCaseSpec);
 
         var flowExtractTasks = new List<Task<Flow>>
@@ -58,7 +58,7 @@ public class UseCaseSpecAnalyzerForFlowchart
         }
 
 
-        await _hubContext.Clients.All.SendAsync("StepGenerated", "Extracting Flows [The extraction of basic, alternative, and exception flows is executed in parallel]...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting Flows [The extraction of basic, alternative, and exception flows is executed in parallel]...");
         var result = await Task.WhenAll(flowExtractTasks);
         return result.ToList();
     }

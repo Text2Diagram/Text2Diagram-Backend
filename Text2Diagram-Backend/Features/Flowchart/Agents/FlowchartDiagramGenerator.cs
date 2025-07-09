@@ -55,9 +55,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             });
             _logger.LogInformation("{JsonString}", jsonString);
 
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart...");
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
 
             string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated flowchart diagram successfully!");
             return new DiagramContent
             {
                 mermaidCode = mermaidCode,

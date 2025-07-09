@@ -116,9 +116,9 @@ public class AnalyzerForER
 				else
 				{
 					var promtValidate = PromtForRegenER.GetPromtForRegenER(JsonConvert.SerializeObject(evaluateResult[0]), diagramJson);
+					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modifying ER diagram...");
 					var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
 					var textValidate = responseValidate.Content ?? "";
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modifying ER diagram...");
 					var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textValidate);
 					// Deserialize JSON to ERDiagram
 					var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);

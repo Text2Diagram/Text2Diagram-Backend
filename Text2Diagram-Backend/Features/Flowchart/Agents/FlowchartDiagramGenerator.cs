@@ -17,6 +17,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private readonly DecisionNodeInserter _decisionNodeInserter;
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
+    private readonly FlowchartDiagramEvaluator _flowchartDiagramEvaluator;
 
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
@@ -24,7 +25,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
         RejoinPointIdentifier rejoinPointIdentifier,
-        IHubContext<ThoughtProcessHub> hubContext)
+        IHubContext<ThoughtProcessHub> hubContext,
+        FlowchartDiagramEvaluator flowchartDiagramEvaluator)
     {
         _logger = logger;
         _llmService = llmService;
@@ -32,43 +34,55 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _decisionNodeInserter = decisionNodeInserter;
         _rejoinPointIdentifier = rejoinPointIdentifier;
         _hubContext = hubContext;
+        _flowchartDiagramEvaluator = flowchartDiagramEvaluator;
     }
 
     public async Task<DiagramContent> GenerateAsync(string input)
     {
-        try
+
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining business domain...");
+        var useCaseDomain = await _analyzer.GetDomainAsync(input);
+        _logger.LogInformation("Use case domain: {0}", useCaseDomain);
+
+        var flows = await _analyzer.AnalyzeAsync(input);
+
+
+        if (flows == null || !flows.Any())
         {
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining business domain...");
-            var useCaseDomain = await _analyzer.GetDomainAsync(input);
-            _logger.LogInformation("Use case domain: {0}", useCaseDomain);
-
-            var flows = await _analyzer.AnalyzeAsync(input);
-
-            var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
-            modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
-
-            var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
-
-            string jsonString = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-            _logger.LogInformation("{JsonString}", jsonString);
-
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart...");
-
-            string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
-            return new DiagramContent
-            {
-                mermaidCode = mermaidCode,
-                diagramJson = jsonString
-            };
+            _logger.LogError("No flows extracted from use case specification.");
+            throw new InvalidOperationException("No flows extracted from use case specification.");
         }
-        catch (Exception ex)
+
+        foreach (var flow in flows)
         {
-            _logger.LogError(ex, "Error generating flowchart diagram");
-            throw;
+            _logger.LogInformation("{FlowData}", JsonSerializer.Serialize(flow));
         }
+
+        var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
+        var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
+
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating diagram...");
+        //await Task.Delay(60000);
+        //var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
+
+        string jsonString = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        _logger.LogInformation("{JsonString}", jsonString);
+
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart...");
+
+        string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
+
+        _logger.LogInformation("Generated Mermaid code: {MermaidCode}", mermaidCode);
+
+        return new DiagramContent
+        {
+            mermaidCode = mermaidCode,
+            diagramJson = jsonString
+        };
+
     }
 
     public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
@@ -297,7 +311,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             }
         }
 
-        (allNodes, allEdges) = await CleanupFlowchartAsync(allNodes, allEdges, flowchart.Flows, subflows);
+        //(allNodes, allEdges) = await CleanupFlowchartAsync(allNodes, allEdges, flowchart.Flows, subflows);
 
         // Generate node definitions
         mermaid.AppendLine("    %% Basic Flow Nodes");

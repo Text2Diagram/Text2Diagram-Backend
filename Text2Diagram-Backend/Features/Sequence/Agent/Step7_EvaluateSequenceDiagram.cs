@@ -1,10 +1,10 @@
 ﻿namespace Text2Diagram_Backend.Features.Sequence.NewWay
 {
-	public static class Step7_EvaluateSequenceDiagram
-	{
-		public static string PromtEvaluateSequenceDiagram(string input, string mermaidCode)
-		{
-			return @"
+    public static class Step7_EvaluateSequenceDiagram
+    {
+        public static string PromtEvaluateSequenceDiagram(string input, string mermaidCode)
+        {
+            return @"
 You are an expert software architecture AI specializing in validating sequence diagrams against user requirements.
 ---
 ### TASK:
@@ -34,6 +34,6 @@ input + @"
 
 SEQUENCE DIAGRAM (Mermaid Syntax):" +
 mermaidCode;
-		}
-	}
+        }
+    }
 }

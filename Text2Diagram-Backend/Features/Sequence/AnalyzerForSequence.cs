@@ -29,16 +29,16 @@ public class AnalyzerForSequence
     private readonly Kernel kernel;
     private readonly ILogger<AnalyzerForSequence> logger;
     private const int MaxRetries = 1;
-	private readonly ILLMService _llmService;
+    private readonly ILLMService _llmService;
     private IHubContext<ThoughtProcessHub> _hubContext;
-	public AnalyzerForSequence(Kernel kernel, ILogger<AnalyzerForSequence> logger, ILLMService llmService
+    public AnalyzerForSequence(Kernel kernel, ILogger<AnalyzerForSequence> logger, ILLMService llmService
         , IHubContext<ThoughtProcessHub> hubContext)
     {
         this.kernel = kernel;
         this.logger = logger;
-		_llmService = llmService;
+        _llmService = llmService;
         _hubContext = hubContext;
-	}
+    }
     /// <summary>
     /// Analyzes a domain description to generate an Entity Relationship Diagram.
     /// </summary>
@@ -58,13 +58,13 @@ public class AnalyzerForSequence
                 //var chatService = kernel.GetRequiredService<IChatCompletionService>();
                 //var chatHistory = new ChatHistory();
                 var promtGetFlow = Step1_ParseFileToGetFlow.GenPromtInStep1(domainDescription);
-				var responseGetFlowInStep1 = await _llmService.GenerateContentAsync(promtGetFlow);
-				//chatHistory.AddUserMessage(promtGetFlow);
-				//var responseGetFlowInStep1 = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
+                var responseGetFlowInStep1 = await _llmService.GenerateContentAsync(promtGetFlow);
+                //chatHistory.AddUserMessage(promtGetFlow);
+                //var responseGetFlowInStep1 = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                 var textGetFlow = responseGetFlowInStep1.Content ?? "";
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Pre-process the input....");
-				// Extract JSON from the response
-				var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Pre-process the input....");
+                // Extract JSON from the response
+                var finalGetFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textGetFlow);
                 var listUseCaseInGetFlow = DeserializeLLMResponseFunc.DeserializeLLMResponse<UseCaseDto>(finalGetFlow);
                 foreach (var item in listUseCaseInGetFlow)
                 {
@@ -73,9 +73,9 @@ public class AnalyzerForSequence
                     //chatHistory.AddUserMessage(promtCombineFlow);
                     var responseCombineFlow = await _llmService.GenerateContentAsync(promtCombineFlow);
                     var textContentCombineflow = responseCombineFlow.Content ?? "";
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Combine flows....");
-					// Extract JSON from the response
-					var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Combine flows....");
+                    // Extract JSON from the response
+                    var finalCombineFlow = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentCombineflow);
                     var listCombineFlow = DeserializeLLMResponseFunc.DeserializeLLMResponse<UseCaseInputDto>(finalCombineFlow);
                     //step_3 : identify participants
                     var strCombineFlow = JsonConvert.SerializeObject(listCombineFlow.FirstOrDefault());
@@ -83,9 +83,9 @@ public class AnalyzerForSequence
                     //chatHistory.AddUserMessage(promtIdentityParticipant);
                     //var responseParticipants = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                     var responseParticipants = await _llmService.GenerateContentAsync(promtIdentityParticipant);
-					var textContentParticipants = responseParticipants.Content ?? "";
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify participants....");
-					var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
+                    var textContentParticipants = responseParticipants.Content ?? "";
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify participants....");
+                    var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
                     var listParticipants = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepParticipantDto>(finalParticipants);
                     //step_4 : Identify conditions
                     var promtIdentifyConditions = Step4_IdentifyCondition.IdentifyCondition(strCombineFlow);
@@ -93,8 +93,8 @@ public class AnalyzerForSequence
                     //var responseConditions = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
                     var responseConditions = await _llmService.GenerateContentAsync(promtIdentifyConditions);
                     var textContentConditions = responseConditions.Content ?? "";
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify conditions....");
-					var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identify conditions....");
+                    var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
                     var listConditions = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepControlTypeDto>(finalConditions);
                     //step_5 : Combine LLM responses
                     var promtCombineLLMResponse = Step5_CombineLLMResult.CombineLLMResults(listCombineFlow.FirstOrDefault(), listParticipants, listConditions);
@@ -104,34 +104,34 @@ public class AnalyzerForSequence
                     //chatHistory.AddUserMessage(promtFinalGenerateMermaid);
                     var responseMermaid = await _llmService.GenerateContentAsync(promtFinalGenerateMermaid);
                     var textReponseMermaid = responseMermaid.Content ?? "";
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generate mermaid syntax for sequence diagram....");
-					//var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
-					//var diagram = DeserializeToMermaicode(finalMermaidCode);
-					var mermaidCode = StripMermaidFences(textReponseMermaid);
-					// step_7 : Evaluate sequence diagram   
-					var promtEvaluateSequenceDiagram = Step7_EvaluateSequenceDiagram.PromtEvaluateSequenceDiagram(domainDescription, mermaidCode);
-					var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateSequenceDiagram);
-					var textEvaluate = responseEvaluate.Content ?? "";
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluate sequence diagram....");
-					var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
-					var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
-					// Check if the evaluation indicates the diagram is accurate
-					if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
-					{
-						// If the diagram is accurate, return it
-						return mermaidCode;
-					}
-					else
-					{
-						var promtValidate = PromtForRegenSequence.GetPromtForRegenSequence(JsonConvert.SerializeObject(evaluateResult[0]), mermaidCode);
-						var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
-						var textValidate = responseValidate.Content ?? "";
-						await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modify mermaid code....");
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generate mermaid syntax for sequence diagram....");
+                    //var finalMermaidCode = ExtractJsonFromText(textReponseMermaid);
+                    //var diagram = DeserializeToMermaicode(finalMermaidCode);
+                    var mermaidCode = StripMermaidFences(textReponseMermaid);
+                    // step_7 : Evaluate sequence diagram   
+                    var promtEvaluateSequenceDiagram = Step7_EvaluateSequenceDiagram.PromtEvaluateSequenceDiagram(domainDescription, mermaidCode);
+                    var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateSequenceDiagram);
+                    var textEvaluate = responseEvaluate.Content ?? "";
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluate sequence diagram....");
+                    var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
+                    var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
+                    // Check if the evaluation indicates the diagram is accurate
+                    if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+                    {
+                        // If the diagram is accurate, return it
+                        return mermaidCode;
+                    }
+                    else
+                    {
+                        var promtValidate = PromtForRegenSequence.GetPromtForRegenSequence(JsonConvert.SerializeObject(evaluateResult[0]), mermaidCode);
+                        var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
+                        var textValidate = responseValidate.Content ?? "";
+                        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modify mermaid code....");
                         return StripMermaidFences(textValidate);
-					}
-				}
+                    }
+                }
 
-			}
+            }
             catch (Newtonsoft.Json.JsonException ex)
             {
                 errorMessage = $"JSON parsing error: {ex.Message}";
@@ -151,33 +151,33 @@ public class AnalyzerForSequence
     {
         try
         {
-			var promt = PromtForRegenSequence.GetPromtForRegenSequence(feedback, digramJson);
-			//chatHistory.AddUserMessage(promtCombineFlow);
-			var res = await _llmService.GenerateContentAsync(promt);
-			var textContent = res.Content ?? "";
-			// Extract JSON from the response
-			//var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
-			return StripMermaidFences(textContent);
-		}
+            var promt = PromtForRegenSequence.GetPromtForRegenSequence(feedback, digramJson);
+            //chatHistory.AddUserMessage(promtCombineFlow);
+            var res = await _llmService.GenerateContentAsync(promt);
+            var textContent = res.Content ?? "";
+            // Extract JSON from the response
+            //var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+            return StripMermaidFences(textContent);
+        }
         catch (Exception e)
         {
-			logger.LogError(e.Message, "Attempt {attempt}: Unexpected error");
-		}
+            logger.LogError(e.Message, "Attempt {attempt}: Unexpected error");
+        }
         return "";
     }
 
-	public static string StripMermaidFences(string input)
-	{
-		var lines = input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+    public static string StripMermaidFences(string input)
+    {
+        var lines = input.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
 
-		// Loại bỏ dòng đầu và dòng cuối
-		if (lines.Length >= 3 && lines[0].Trim().Equals("```mermaid") && lines[^1].Trim().Equals("```"))
-		{
-			return string.Join("\n", lines.Skip(1).Take(lines.Length - 2)).Trim();
-		}
+        // Loại bỏ dòng đầu và dòng cuối
+        if (lines.Length >= 3 && lines[0].Trim().Equals("```mermaid") && lines[^1].Trim().Equals("```"))
+        {
+            return string.Join("\n", lines.Skip(1).Take(lines.Length - 2)).Trim();
+        }
 
-		return input.Trim(); // Trả nguyên nếu không match
-	}
+        return input.Trim(); // Trả nguyên nếu không match
+    }
 
     /// <summary>
     /// Analyzes a domain description to generate an Entity Relationship Diagram.
@@ -189,27 +189,27 @@ public class AnalyzerForSequence
     private SequenceDiagram DeserializeToMermaicode(string domainDescription)
     {
         var jsonNode = JsonNode.Parse(domainDescription);
-		var updatedJson = jsonNode.ToJsonString(new JsonSerializerOptions
+        var updatedJson = jsonNode.ToJsonString(new JsonSerializerOptions
         {
             WriteIndented = false
         });
         var diagram = JsonConvert.DeserializeObject<SequenceDiagram>(
-			updatedJson,
-			new JsonSerializerSettings
-			{
-				TypeNameHandling = TypeNameHandling.Auto,
-				MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
-				Converters = new List<JsonConverter> { new StringEnumConverter() },
-				MissingMemberHandling = MissingMemberHandling.Ignore,
-				NullValueHandling = NullValueHandling.Ignore,
-				Error = (sender, args) =>
-				{
-					logger.LogError("Deserialization error at {path}: {error}", args.ErrorContext.Path, args.ErrorContext.Error.Message);
-					args.ErrorContext.Handled = true;
-				}
-			}
-		);
+            updatedJson,
+            new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
+                Converters = new List<JsonConverter> { new StringEnumConverter() },
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                Error = (sender, args) =>
+                {
+                    logger.LogError("Deserialization error at {path}: {error}", args.ErrorContext.Path, args.ErrorContext.Error.Message);
+                    args.ErrorContext.Handled = true;
+                }
+            }
+        );
 
-		return diagram;
-	}
+        return diagram;
+    }
 }

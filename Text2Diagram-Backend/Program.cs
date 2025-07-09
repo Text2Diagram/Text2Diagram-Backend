@@ -104,7 +104,7 @@ builder.Services.AddHttpClient("GeminiClient", client =>
 
 builder.Services.AddTransient<GoogleAuthHandler>();
 
-builder.Services.AddScoped<ILLMService, GeminiService>();
+builder.Services.AddTransient<ILLMService, GeminiService>();
 // Register flowchart components
 builder.Services.AddScoped<FlowchartDiagramGenerator>();
 builder.Services.AddScoped<ERDiagramGenerator>();
@@ -122,6 +122,7 @@ builder.Services.AddScoped<ExceptionFlowExtractor>();
 builder.Services.AddScoped<FlowCategorizer>();
 builder.Services.AddScoped<DecisionNodeInserter>();
 builder.Services.AddScoped<RejoinPointIdentifier>();
+builder.Services.AddScoped<FlowchartDiagramEvaluator>();
 
 builder.Services.AddHttpContextAccessor();
 

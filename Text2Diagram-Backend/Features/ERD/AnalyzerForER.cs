@@ -67,23 +67,23 @@ public class AnalyzerForER
             {
                 //step 1: Identify entities
                 string promtIdentifyEntities = Step1_IdentifyEntity.GetPromtIdentifyEntity(domainDescription);
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying entities....");
                 var responseIdentifyEntities = await _llmService.GenerateContentAsync(promtIdentifyEntities);
                 var textContent = responseIdentifyEntities.Content ?? "";
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying entities....");
 				var finalIdentifyEntities = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listEntity = DeserializeLLMResponseFunc.DeserializeLLMResponse<string>(finalIdentifyEntities);
                 //step 2: Identify properties
                 string promtIdentifyProperties = Step2_IdentifyProperty.PromtIdentifyProperty(domainDescription, JsonConvert.SerializeObject(listEntity));
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying properties...");
                 var responseIdentifyProperties = await _llmService.GenerateContentAsync(promtIdentifyProperties);
                 textContent = responseIdentifyProperties.Content ?? "";
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying properties...");
 				var finalIdentifyProperties = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listCompletedEntity = DeserializeLLMResponseFunc.DeserializeLLMResponse<Entity>(finalIdentifyProperties);
                 //step 3: Identify relationships
                 string promtIdentifyRelationships = Step3_IdentifyRelation.PromtIdentifyRelation(domainDescription, JsonConvert.SerializeObject(listEntity));
+				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying relationships...");
                 var responseIdentifyRelationships = await _llmService.GenerateContentAsync(promtIdentifyRelationships);
                 textContent = responseIdentifyRelationships.Content ?? "";
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying relationships...");
 				var finalIdentifyRelationships = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listRelationship = DeserializeLLMResponseFunc.DeserializeLLMResponse<Relationship>(finalIdentifyRelationships);
 				// Deserialize JSON to ERDiagram

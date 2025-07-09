@@ -71,21 +71,16 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         });
         _logger.LogInformation("{JsonString}", jsonString);
 
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
 
-            string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated flowchart diagram successfully!");
-            return new DiagramContent
-            {
-                mermaidCode = mermaidCode,
-                diagramJson = jsonString
-            };
-        }
-        catch (Exception ex)
+        string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated flowchart diagram successfully!");
+        return new DiagramContent
         {
-            _logger.LogError(ex, "Error generating flowchart diagram");
-            throw;
-        }
+            mermaidCode = mermaidCode,
+            diagramJson = jsonString
+        };
+
     }
 
     public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)

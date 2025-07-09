@@ -13,6 +13,11 @@ using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.Middlewares;
 using Text2Diagram_Backend.Features.Helper;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Text2Diagram_Backend.Features.ERD.Agents;
+using Text2Diagram_Backend.Features.ERD.Components;
+using Text2Diagram_Backend.Features.Sequence.Agent.Objects;
+using Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -97,7 +102,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 Extends = extends.Select(e => new { e.BaseUseCase, e.ExtendedUseCase }).ToList()
             };
 
-            string combinedJsonInput = JsonSerializer.Serialize(combinedJson, new JsonSerializerOptions
+            string combinedJsonInput = System.Text.Json.JsonSerializer.Serialize(combinedJson, new JsonSerializerOptions
             {
                 WriteIndented = true
             });
@@ -129,7 +134,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
 
             logger.LogInformation(" Raw response json:\n{Content}", jsonResult);
 
-            var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
+            var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
                 AllowTrailingCommas = true,
@@ -141,9 +146,26 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 errorMessage = "Deserialization returned null.";
                 logger.LogWarning(" Raw response ex:\n{Content}", errorMessage);
             }
-            diagram.Packages.RemoveAll(p => p.Actors.Count == 0 || p.UseCases.Count == 0);
-            return diagram;
-
+            else
+            {
+                diagram.Packages.RemoveAll(p => p.Actors.Count == 0 || p.UseCases.Count == 0);
+            }
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluate Usecase Diagram...");
+            var promptEvaluate = EvaluateUsecaseDiagram.PromptEvaluateUsecaseDiagram(useCaseSpec, jsonResult);
+            var evaluationResult = await _llmService.GenerateContentAsync(promptEvaluate);
+            var evaluationJsonResult = ExtractJsonFromTextHelper.ExtractJsonFromText(evaluationResult.Content);
+            Console.WriteLine("Evaluation JSON Result: " + evaluationJsonResult);
+            var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(evaluationJsonResult);
+            if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+            {
+                return diagram;
+            }
+            else
+            {
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modify planUML Code....");
+                diagram = await AnalyzeRegenAsync(JsonConvert.SerializeObject(evaluateResult[0]), jsonResult);
+                return diagram;
+            }
         }
         catch (Exception ex)
         {
@@ -175,7 +197,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
             }
             jsonResult = rawJsonMatch.Value.Trim();
         }
-        var diagram = JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
+        var diagram = System.Text.Json.JsonSerializer.Deserialize<UseCaseDiagram>(jsonResult, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             AllowTrailingCommas = true,

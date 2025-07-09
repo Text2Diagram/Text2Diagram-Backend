@@ -17,6 +17,10 @@ public class FlowchartDiagramEvaluator
 
     public async Task<FlowchartDiagram> EvaluateFlowchartDiagramAsync(string useCaseSpec, FlowchartDiagram flowchart)
     {
+        var diagramJson = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions { WriteIndented = true });
+        _logger.LogInformation("Evaluating flowchart diagram: {DiagramJson}", diagramJson);
+
+
         var prompt = """
             You are an expert software architecture AI specializing in validating and improving flowchart diagrams against user requirements. Your task is to:
 
@@ -67,7 +71,7 @@ public class FlowchartDiagramEvaluator
             Evaluate the flowchart diagram against the use case specification provided below:
             {useCaseSpec}
             The original flowchart diagram is as follows:
-            {JsonSerializer.Serialize(flowchart, new JsonSerializerOptions { WriteIndented = true })}
+            {diagramJson}
 
             Return the corrected flowchart diagram in the same JSON format. 
             Only correct the flowchart if it does not accurately reflect the use case specification or if there are identified issues.
@@ -79,7 +83,7 @@ public class FlowchartDiagramEvaluator
 
         var response = await _llmService2.GenerateContentAsync(prompt);
         var json = FlowchartHelpers.ValidateJson(response.Content);
-        _logger.LogInformation("Evaluating flowchart diagram: {Response}", response.Content);
+        _logger.LogInformation("Evaluating flowchart diagram: {Response}", json);
         var correctedFlowchart = JsonSerializer.Deserialize<FlowchartDiagram>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         return correctedFlowchart ?? throw new InvalidOperationException("Failed to parse the corrected flowchart diagram from the response.");
     }

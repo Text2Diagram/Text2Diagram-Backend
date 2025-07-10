@@ -51,18 +51,18 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             throw new InvalidOperationException("No flows extracted from use case specification.");
         }
 
-        foreach (var flow in flows)
-        {
-            _logger.LogInformation("{FlowData}", JsonSerializer.Serialize(flow));
-        }
+        _logger.LogInformation("All flows: {Flows}", JsonSerializer.Serialize(flows));
 
         var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows);
 
+        _logger.LogInformation("[After inserting decision nodes] Flows: {Flows}", JsonSerializer.Serialize(modifiedFlows));
+        _logger.LogInformation("[Decision nodes] Flows: {Flows}", JsonSerializer.Serialize(branchingPoints));
 
         modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
+        _logger.LogInformation("[After adding rejoin nodes] Flows: {Flows}", JsonSerializer.Serialize(modifiedFlows));
         var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
 
-
+        _logger.LogInformation("Flowchart: {Flowchart}", JsonSerializer.Serialize(flowchart));
         await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating the diagram...");
         //var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
 
@@ -75,6 +75,9 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
 
         string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
+
+        _logger.LogInformation("Generated Mermaid code: {MermaidCode}", mermaidCode);
+
         await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Flowchart diagram generated!");
         return new DiagramContent
         {

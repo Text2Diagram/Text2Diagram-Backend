@@ -10,15 +10,15 @@ namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class RejoinPointIdentifier
 {
-    private readonly ILLMService1 _llmService;
+    private readonly ILLMService3 _llmService3;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly ILogger<RejoinPointIdentifier> _logger;
 
-    public RejoinPointIdentifier(ILLMService1 llmService,
+    public RejoinPointIdentifier(ILLMService3 llmService3,
         IHubContext<ThoughtProcessHub> hubContext,
                                  ILogger<RejoinPointIdentifier> logger)
     {
-        _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+        _llmService3 = llmService3 ?? throw new ArgumentNullException(nameof(llmService3));
         _hubContext = hubContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -36,7 +36,7 @@ public class RejoinPointIdentifier
             [.. f.Edges]
         )).ToList();
 
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining rejoin points...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining rejoin nodes and adding edges from subflows to main flow...");
 
         foreach (var subFlow in subFlows)
         {
@@ -62,7 +62,7 @@ public class RejoinPointIdentifier
                     """;
                 try
                 {
-                    var response = await _llmService.GenerateContentAsync(prompt);
+                    var response = await _llmService3.GenerateContentAsync(prompt);
                     _logger.LogDebug("LLM response for subflow {SubflowName}, end node {EndNodeId}: {Response}",
                         subFlow.Name, endNode.Id, response.Content);
                     var jsonResponse = FlowchartHelpers.ValidateJson(response.Content);

@@ -31,7 +31,7 @@ public class DecisionNodeInserter
     }
 
     public async Task<(List<Flow> Flows, List<BranchingPoint> BranchingPoints)>
-        InsertDecisionNodesAsync(List<Flow> flows, string useCaseDomain = "general")
+        InsertDecisionNodesAsync(List<Flow> flows)
     {
         var branchingPoints = new List<BranchingPoint>();
         var basicFlow = flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
@@ -45,7 +45,7 @@ public class DecisionNodeInserter
             [.. basicFlow.Edges]
         );
 
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determine insertion points...");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining decision nodes...");
 
         foreach (var subflow in subflows)
         {
@@ -71,10 +71,10 @@ public class DecisionNodeInserter
             var targetId = $"{subflow.Name}_{targetNode.Id}";
 
             // Determine insertion point 
-            var insertionNodeId = await DetermineInsertionPointAsync(modifiedBasicFlow, subflow, targetNode, useCaseDomain);
+            var insertionNodeId = await DetermineInsertionPointAsync(modifiedBasicFlow, subflow, targetNode);
 
             // Generate decision label
-            var decisionLabel = await GenerateDecisionLabelAsync(subflow, targetNode, useCaseDomain);
+            var decisionLabel = await GenerateDecisionLabelAsync(subflow, targetNode);
 
             // Insert decision node if not already present
             if (!modifiedBasicFlow.Nodes.Any(n => n.Id == decisionNodeId))
@@ -122,12 +122,12 @@ public class DecisionNodeInserter
     }
 
     private async Task<string> DetermineInsertionPointAsync(
-        Flow basicFlow, Flow subflow, FlowNode targetNode, string useCaseDomain)
+        Flow basicFlow, Flow subflow, FlowNode targetNode)
     {
         var insertionPrompt = $"""
             Given the basic flow nodes: {JsonSerializer.Serialize(basicFlow.Nodes.Select(n => new { n.Id, n.Label, n.Type }))},
-            and a subflow '{subflow.Name}' (Type: {subflow.FlowType}) with entry node '{targetNode.Label}'
-            in the {useCaseDomain} domain, suggest the most logical node ID in the basic flow to insert a decision node
+            and a subflow '{subflow.Name}' (Type: {subflow.FlowType}) with entry node '{targetNode.Label}',
+            suggest the most logical node ID in the basic flow to insert a decision node
             that branches to this subflow. Provide the node ID from the basic flow that the decision node should precede.
             """
             +
@@ -159,16 +159,16 @@ public class DecisionNodeInserter
         return insertionNodeId;
     }
 
-    private async Task<string> GenerateDecisionLabelAsync(Flow subflow, FlowNode targetNode, string useCaseDomain)
+    private async Task<string> GenerateDecisionLabelAsync(Flow subflow, FlowNode targetNode)
     {
         string branchingCondition = subflow.FlowType == FlowType.Exception
             ? "'No' branch leads to the subflow and 'Yes' to the basic flow"
             : "'Yes' branch leads to the subflow and 'No' to the basic flow";
         var decisionPrompt = $"""
-            For the subflow '{subflow.Name}' (Type: {subflow.FlowType}) with entry node '{targetNode.Label}'
-            in the {useCaseDomain} domain, generate a clear and concise decision question to branch to this subflow.
+            For the subflow '{subflow.Name}' (Type: {subflow.FlowType}) with entry node '{targetNode.Label}',
+            generate a clear and concise decision question to branch to this subflow.
             The question should be phrased such that the {branchingCondition}.
-            Ensure the question is relevant to the {useCaseDomain} domain and avoids redundancy with other decision nodes.
+            Avoids redundancy with other decision nodes.
             """
             +
             """

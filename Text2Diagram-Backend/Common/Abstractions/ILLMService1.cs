@@ -10,6 +10,11 @@
         Task<LLMResponse> GenerateContentAsync(string prompt);
     }
 
+    public interface ILLMService3
+    {
+        Task<LLMResponse> GenerateContentAsync(string prompt);
+    }
+
     public class LLMRequest
     {
         public string Prompt { get; set; }

@@ -1,22 +1,21 @@
 ﻿using System.Text.Json;
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Features.Flowchart.Components;
-using Text2Diagram_Backend.LLMServices;
 
 namespace Text2Diagram_Backend.Features.Flowchart.Agents;
 
 public class AlternativeFlowExtractor
 {
     private readonly ILLMService1 _llmService;
-    private readonly ILLMService2 _llmService2;
+    private readonly ILLMService3 _llmService3;
     private readonly ILogger<AlternativeFlowExtractor> _logger;
 
     public AlternativeFlowExtractor(ILLMService1 llmService,
-        ILLMService2 llmService2,
+        ILLMService3 llmService3,
         ILogger<AlternativeFlowExtractor> logger)
     {
         _llmService = llmService;
-        _llmService2 = llmService2;
+        _llmService3 = llmService3;
         _logger = logger;
     }
 
@@ -137,7 +136,7 @@ public class AlternativeFlowExtractor
         ]
         """;
 
-        var response = await _llmService2.GenerateContentAsync(prompt);
+        var response = await _llmService3.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var edges = FlowchartHelpers.ExtractEdges(textContent);

@@ -91,6 +91,7 @@ builder.Services.AddSingleton<FirebaseTokenVerifier>();
 // Add LLM Gemini Service
 builder.Services.Configure<GeminiOptions>("Gemini1", builder.Configuration.GetSection("Gemini1"));
 builder.Services.Configure<GeminiOptions>("Gemini2", builder.Configuration.GetSection("Gemini2"));
+builder.Services.Configure<GeminiOptions>("Gemini3", builder.Configuration.GetSection("Gemini3"));
 
 builder.Services.AddHttpClient("GeminiClient_Gemini1")
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(5))
@@ -109,6 +110,16 @@ builder.Services.AddHttpClient("GeminiClient_Gemini2")
         return new GoogleAuthHandler(
             sp.GetRequiredService<IOptionsMonitor<GeminiOptions>>(),
             "Gemini2"
+        );
+    });
+
+builder.Services.AddHttpClient("GeminiClient_Gemini3")
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromMinutes(5))
+    .AddHttpMessageHandler(sp =>
+    {
+        return new GoogleAuthHandler(
+            sp.GetRequiredService<IOptionsMonitor<GeminiOptions>>(),
+            "Gemini3"
         );
     });
 
@@ -134,7 +145,16 @@ builder.Services.AddTransient<ILLMService2>(sp =>
     return new GeminiService2(Options.Create(options), httpClient);
 });
 
+builder.Services.AddTransient<ILLMService3>(sp =>
+{
+    var optionsMonitor = sp.GetRequiredService<IOptionsSnapshot<GeminiOptions>>();
+    var options = optionsMonitor.Get("Gemini3");
 
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("GeminiClient_Gemini3");
+
+    return new GeminiService3(Options.Create(options), httpClient);
+});
 
 // Register flowchart components
 builder.Services.AddScoped<FlowchartDiagramGenerator>();

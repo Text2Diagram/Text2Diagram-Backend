@@ -13,6 +13,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 {
     private readonly ILogger<FlowchartDiagramGenerator> _logger;
     private readonly ILLMService1 _llmService;
+    private readonly ILLMService3 _llmService3;
     private readonly UseCaseSpecAnalyzerForFlowchart _analyzer;
     private readonly DecisionNodeInserter _decisionNodeInserter;
     private readonly RejoinPointIdentifier _rejoinPointIdentifier;
@@ -22,6 +23,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     public FlowchartDiagramGenerator(
         ILogger<FlowchartDiagramGenerator> logger,
         ILLMService1 llmService,
+        ILLMService3 llmService3,
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
         RejoinPointIdentifier rejoinPointIdentifier,
@@ -30,6 +32,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     {
         _logger = logger;
         _llmService = llmService;
+        _llmService3 = llmService3;
         _analyzer = analyzer;
         _decisionNodeInserter = decisionNodeInserter;
         _rejoinPointIdentifier = rejoinPointIdentifier;
@@ -39,11 +42,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
     public async Task<DiagramContent> GenerateAsync(string input)
     {
-
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Determining business domain...");
-        var useCaseDomain = await _analyzer.GetDomainAsync(input);
-        _logger.LogInformation("Use case domain: {0}", useCaseDomain);
-
         var flows = await _analyzer.AnalyzeAsync(input);
 
 
@@ -58,15 +56,15 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             _logger.LogInformation("{FlowData}", JsonSerializer.Serialize(flow));
         }
 
-        var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows, useCaseDomain);
+        var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows);
 
 
         modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
         var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
 
 
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating diagram...");
-        var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating the diagram...");
+        //var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
 
         string jsonString = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
         {
@@ -77,13 +75,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
 
         string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated flowchart diagram successfully!");
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Flowchart diagram generated!");
         return new DiagramContent
         {
             mermaidCode = mermaidCode,
             diagramJson = jsonString
         };
-
     }
 
     public async Task<DiagramContent> ReGenerateAsync(string feedback, string diagramJson)
@@ -171,7 +168,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 """;
         try
         {
-            var llmResponse = await _llmService.GenerateContentAsync(prompt);
+            var llmResponse = await _llmService3.GenerateContentAsync(prompt);
             if (string.IsNullOrEmpty(llmResponse?.Content))
             {
                 _logger.LogWarning("LLM returned empty response for feedback: {Feedback}", feedback);

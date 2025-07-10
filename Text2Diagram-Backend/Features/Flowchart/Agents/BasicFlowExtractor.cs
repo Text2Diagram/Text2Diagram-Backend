@@ -74,7 +74,7 @@ public class BasicFlowExtractor
             ```
             """;
 
-        var response = await _aiTogetherService.GenerateContentAsync(prompt);
+        var response = await _llmService.GenerateContentAsync(prompt);
         var textContent = response.Content ?? string.Empty;
 
         var nodes = FlowchartHelpers.ExtractNodes(textContent);

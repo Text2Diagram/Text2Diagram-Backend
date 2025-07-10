@@ -63,49 +63,4 @@ public class UseCaseSpecAnalyzerForFlowchart
         return result.ToList();
     }
 
-    public async Task<string> GetDomainAsync(string useCaseSpec)
-    {
-        var domainPrompt = $"""
-        Given the following use case specification: "{useCaseSpec}",
-        identify the most relevant domain for this use case. Examples:
-        - For "A user books a ride by selecting pickup and destination locations": "ride-hailing"
-        - For "A user adds items to a cart and checks out with payment": "e-commerce"
-        - For "A user transfers money between bank accounts": "banking"
-        - For "A user schedules a medical appointment": "healthcare"
-        If the domain is unclear, return "general".
-        """
-        +
-        """
-        Return JSON: { "Domain": "" }
-        """;
-
-        try
-        {
-            var domainResponse = await _aiTogetherService.GenerateContentAsync(domainPrompt);
-            var domainJson = FlowchartHelpers.ValidateJson(domainResponse.Content);
-
-            if (domainJson == null)
-            {
-                _logger.LogWarning("Invalid JSON response from LLM for use case domain. Defaulting to 'general'. Response: {Response}",
-                    domainResponse.Content);
-                return "general";
-            }
-
-            var domain = domainJson["Domain"]?.GetValue<string>();
-            if (string.IsNullOrWhiteSpace(domain))
-            {
-                _logger.LogWarning("LLM returned empty or invalid domain for use case spec. Defaulting to 'general'. Response: {Response}",
-                    domainResponse.Content);
-                return "general";
-            }
-
-            _logger.LogInformation("Determined domain '{Domain}' for use case specification.", domain);
-            return domain;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while determining domain for use case spec. Defaulting to 'general'.");
-            return "general";
-        }
-    }
 }

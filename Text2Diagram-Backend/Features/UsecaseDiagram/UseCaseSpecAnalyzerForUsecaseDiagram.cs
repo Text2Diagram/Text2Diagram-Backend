@@ -62,34 +62,53 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
     {
         try
         {
-            //Get actors
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting actors from specification...");
-            string promtActor = ExtractActor.GetExtractActorPrompt(useCaseSpec);
-            var actorResult = await _llmService.GenerateContentAsync(promtActor);
-            var actorJsonNode = Helpers.ValidateJson(actorResult.Content);
-            var actors = ExtractActor.GetActors(actorJsonNode);
 
-            //Get usecases
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting use cases from specification...");
-            string promtUseCase = ExtractUsecase.GetExtractUseCasePrompt(useCaseSpec);
-            var usecaseResult = await _llmService.GenerateContentAsync(promtUseCase);
-            var usecaseJsonNode = Helpers.ValidateJson(usecaseResult.Content);
-            var usecases = ExtractUsecase.GetUseCases(usecaseJsonNode);
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId)
+                .SendAsync("StepGenerated", "Extracting actors and use cases...");
 
-            //Get associations
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting associations between actors and use cases...");
-            string promtAssociation = ExtractAssociation.GetExtractAssociationPrompt(useCaseSpec, actors, usecases);
-            var associationResult = await _llmService.GenerateContentAsync(promtAssociation);
-            var associationJsonNode = Helpers.ValidateJson(associationResult.Content);
-            var associations = ExtractAssociation.GetAssociations(associationJsonNode);
+            var actorTask = Task.Run(() => _llmService.GenerateContentAsync(
+                    ExtractActor.GetExtractActorPrompt(useCaseSpec))
+                .ContinueWith(t =>
+                    ExtractActor.GetActors(
+                        Helpers.ValidateJson(t.Result.Content)
+                    )));
 
-            // Get relationships
-            await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting relationships between use cases...");
-            string promptRelationship = ExtractRelationship.GetExtractRelationshipPrompt(useCaseSpec, usecases);
-            var relationshipResult = await _llmService.GenerateContentAsync(promptRelationship);
-            var relationshipJsonNode = Helpers.ValidateJson(relationshipResult.Content);
-            var includes = ExtractRelationship.GetIncludes(relationshipJsonNode);
-            var extends = ExtractRelationship.GetExtends(relationshipJsonNode);
+            var usecaseTask = Task.Run(() => _llmService.GenerateContentAsync(
+                    ExtractUsecase.GetExtractUseCasePrompt(useCaseSpec))
+                .ContinueWith(t =>
+                    ExtractUsecase.GetUseCases(
+                        Helpers.ValidateJson(t.Result.Content)
+                    )));
+
+            await Task.WhenAll(actorTask, usecaseTask);
+            var actors = actorTask.Result;
+            var usecases = usecaseTask.Result;
+
+            await _hubContext.Clients.Client(SignalRContext.ConnectionId)
+                .SendAsync("StepGenerated", "Extracting associations and relationships...");
+
+            var associationTask = Task.Run(() => _llmService.GenerateContentAsync(
+                    ExtractAssociation.GetExtractAssociationPrompt(useCaseSpec, actors, usecases))
+                .ContinueWith(t =>
+                    ExtractAssociation.GetAssociations(
+                        Helpers.ValidateJson(t.Result.Content)
+                    )));
+
+            var relationshipTask = Task.Run(() => _llmService.GenerateContentAsync(
+                    ExtractRelationship.GetExtractRelationshipPrompt(useCaseSpec, usecases))
+                .ContinueWith(t =>
+                {
+                    var json = Helpers.ValidateJson(t.Result.Content);
+                    return (
+                        Includes: ExtractRelationship.GetIncludes(json),
+                        Extends: ExtractRelationship.GetExtends(json)
+                );
+            }));
+
+            await Task.WhenAll(associationTask, relationshipTask);
+            var associations = associationTask.Result;
+            var includes = relationshipTask.Result.Includes;
+            var extends = relationshipTask.Result.Extends;
 
             //Get packages
             await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Extracting packages...");
@@ -103,9 +122,9 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
                 Extends = extends.Select(e => new { e.BaseUseCase, e.ExtendedUseCase }).ToList()
             };
 
-            string combinedJsonInput = System.Text.Json.JsonSerializer.Serialize(combinedJson, new JsonSerializerOptions
+            string combinedJsonInput = JsonConvert.SerializeObject(combinedJson, new JsonSerializerSettings
             {
-                WriteIndented = true
+                Formatting = Formatting.Indented,
             });
 
             string promptPackage = ExtractPackage.GetExtractPackagePrompt(combinedJsonInput);

@@ -35,6 +35,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                 - Include/Extend relationships should stay inside the package if both base and target are in the same area; otherwise, keep them in the most relevant package.
                 - Try to minimize duplication across packages.
                 - Package names should be descriptive and relevant (e.g., “Appointment Management”, “Authentication”).
+                - Use case name must contain only words and spaces, avoid slashes, parentheses, commas, semicolons, ... or any other punctuation marks.
 
                 ### FORMAT:
                 Return the result as valid JSON like below:

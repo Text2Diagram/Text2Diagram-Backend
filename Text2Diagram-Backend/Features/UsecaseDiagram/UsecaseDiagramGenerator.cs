@@ -112,6 +112,8 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         // Start PlantUML definition
         puml.AppendLine("@startuml");
         puml.AppendLine("left to right direction");
+        puml.AppendLine("skinparam defaultFontName \"Arial\"");
+        puml.AppendLine("skinparam unicode true");
 
         var useCasesInBoundaries = new HashSet<string>();
         if (diagram.Packages != null && diagram.Packages.Any())
@@ -166,6 +168,7 @@ public class UsecaseDiagramGenerator : IDiagramGenerator
         }   
 
         puml.AppendLine("@enduml");
+        var test = puml.ToString();
 
         return puml.ToString();
 

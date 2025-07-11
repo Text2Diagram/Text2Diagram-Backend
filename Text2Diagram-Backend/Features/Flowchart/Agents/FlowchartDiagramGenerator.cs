@@ -48,12 +48,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             throw new InvalidOperationException("No flows extracted from use case specification.");
         }
 
-        _logger.LogInformation("All flows: {Flows}", JsonSerializer.Serialize(flows));
+        //_logger.LogInformation("All flows: {Flows}", JsonSerializer.Serialize(flows));
 
         var (modifiedFlows, branchingPoints) = await _decisionNodeInserter.InsertDecisionNodesAsync(flows);
 
-        _logger.LogInformation("[After inserting decision nodes] Flows: {Flows}", JsonSerializer.Serialize(modifiedFlows));
-        _logger.LogInformation("[Decision nodes] Flows: {Flows}", JsonSerializer.Serialize(branchingPoints));
+        //_logger.LogInformation("[After inserting decision nodes] Flows: {Flows}", JsonSerializer.Serialize(modifiedFlows));
+        //_logger.LogInformation("[Decision nodes] Flows: {Flows}", JsonSerializer.Serialize(branchingPoints));
 
         var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
 
@@ -67,7 +67,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         {
             WriteIndented = true
         });
-        _logger.LogInformation("{JsonString}", jsonString);
+        //_logger.LogInformation("{JsonString}", jsonString);
 
         _logger.LogInformation("Generated Mermaid code: {MermaidCode}", mermaidCode);
 
@@ -375,18 +375,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
     public async Task<FlowchartDiagram> ValidateDiagram(FlowchartDiagram flowchart)
     {
-        var basicFlow = flowchart.Flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
-            ?? throw new InvalidOperationException("Basic flow is required.");
-        var subflows = flowchart.Flows.Where(f => f.FlowType is FlowType.Alternative or FlowType.Exception).ToList();
-        var nodesJson = JsonSerializer.Serialize(
-            flowchart.Flows.SelectMany(f => f.Nodes).Select(n => new { n.Id, n.Label, Type = n.Type.ToString() }));
-        var edgesJson = JsonSerializer.Serialize(
-            flowchart.Flows.SelectMany(f => f.Edges).Select(e => new { e.SourceId, e.TargetId, e.Label, Type = e.Type.ToString() }));
-        var branchingPointsJson = JsonSerializer.Serialize(
-            flowchart.BranchingPoints.Select(b => new { b.SubFlowName, b.BranchNodeId, b.RejoinNodeId }));
-
         var prompt = $"""
-        You are tasked with validating and correcting a flowchart to ensure proper connectivity and logical structure. Given the nodes, edges, and branching points below, perform the following:
+        You are tasked with validating and correcting a flowchart to ensure proper connectivity and logical structure. Given the flowchart below, perform the following:
 
         1. Ensure subflow connectivity:
            - For each subflow, ensure all nodes are connected in a logical sequence from start to end.
@@ -407,11 +397,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
            - Use OpenArrow for exception flow branches (e.g., decision_itemOutOfStock --o|No| itemOutOfStock_exception_flow_input_output_1).
            - Use Arrow for basic and alternative flows and rejoin edges.
 
-        Nodes: {nodesJson}
-        Edges: {edgesJson}
-        Branching Points: {branchingPointsJson}
-        Basic Flow Name: {basicFlow.Name}
-        Subflows: {JsonSerializer.Serialize(subflows.Select(s => new { s.Name, s.FlowType }))}
+        Node Rules: {Prompts.NodeRules}
+        Edge Rules: {Prompts.EdgeRules}
+
+        Flowchart: {JsonSerializer.Serialize(flowchart)}
         """
         +
         """

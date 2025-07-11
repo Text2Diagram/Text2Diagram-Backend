@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
-using System.Diagnostics;
+
 using Text2Diagram_Backend.Common.Abstractions;
 using Text2Diagram_Backend.Common.Hubs;
 using Text2Diagram_Backend.LLMServices;

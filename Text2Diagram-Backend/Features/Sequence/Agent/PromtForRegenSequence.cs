@@ -1,11 +1,14 @@
-﻿namespace Text2Diagram_Backend.Features.Sequence.Agent
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.Sequence.Agent
 {
-	public static class PromtForRegenSequence
-	{
-		public static string GetPromtForRegenSequence(string feedback, string mermaidCode)
-		{
-			return @"
+    public static class PromtForRegenSequence
+    {
+        public static string GetPromtForRegenSequence(string feedback, string mermaidCode)
+        {
+            return @"
 You are a smart AI agent that edits Mermaid sequence diagrams based on user feedback.
+" + Prompts.LanguageRules + @"
 You will receive:
 1. An existing sequence diagram (in full Mermaid syntax).
 2. A user feedback describing exactly what should be modified.
@@ -16,7 +19,7 @@ Your job:
 
 📥 Current Mermaid code:" +
 mermaidCode + @"
-🗣 User Feedback:"+
+🗣 User Feedback:" +
 feedback + @"
 Return only the updated diagram wrapped in triple backticks with the mermaid tag.
 ### Example:
@@ -30,6 +33,6 @@ sequenceDiagram
     User->>UI: Click Checkout
     UI->>System: Add item
 ";
-		}
-	}
+        }
+    }
 }

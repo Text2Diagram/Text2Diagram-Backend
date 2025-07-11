@@ -1,4 +1,6 @@
-﻿namespace Text2Diagram_Backend.Features.Sequence.NewWay
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.Sequence.NewWay
 {
     public static class Step7_EvaluateSequenceDiagram
     {
@@ -6,6 +8,7 @@
         {
             return @"
 You are an expert software architecture AI specializing in validating sequence diagrams against user requirements.
+" + Prompts.LanguageRules + @"
 ---
 ### TASK:
 Your job is to **analyze the correctness, completeness, and logical consistency** of a sequence diagram written in Mermaid syntax, based on a user-provided functional description (input).

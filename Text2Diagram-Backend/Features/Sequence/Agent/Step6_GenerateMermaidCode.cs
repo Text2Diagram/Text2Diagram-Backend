@@ -1,15 +1,17 @@
 ﻿using System.Text.Json;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.Sequence.NewWay.Objects;
 
 namespace Text2Diagram_Backend.Features.Sequence.NewWay
 {
-	public static class Step6_GenerateMermaidCode
-	{
-		public static string GenerateMermaidCode(List<StepFinalDto> allSteps)
-		{
+    public static class Step6_GenerateMermaidCode
+    {
+        public static string GenerateMermaidCode(List<StepFinalDto> allSteps)
+        {
             //var batch = SplitFlowIntoBatches(allSteps);
-			return @"
+            return @"
 You are an expert AI agent that converts structured software steps into Mermaid-compatible sequence diagram code.
+" + Prompts.LanguageRules + @"
 ---
 ### INPUT FORMAT
 You are given a list of JSON objects, each describing one step in a use case interaction flow.  
@@ -64,15 +66,15 @@ sequenceDiagram
 ---------
 Here is the input:
 " + JsonSerializer.Serialize(allSteps);
-		}
+        }
 
-		public static List<List<StepFinalDto>> SplitFlowIntoBatches(List<StepFinalDto> allSteps, int batchSize = 10)
-		{
-			return allSteps
-				.Select((step, index) => new { step, index })
-				.GroupBy(x => x.index / batchSize)
-				.Select(g => g.Select(x => x.step).ToList())
-				.ToList();
-		}
-	}
+        public static List<List<StepFinalDto>> SplitFlowIntoBatches(List<StepFinalDto> allSteps, int batchSize = 10)
+        {
+            return allSteps
+                .Select((step, index) => new { step, index })
+                .GroupBy(x => x.index / batchSize)
+                .Select(g => g.Select(x => x.step).ToList())
+                .ToList();
+        }
+    }
 }

@@ -1,14 +1,16 @@
-﻿namespace Text2Diagram_Backend.Features.Sequence.NewWay
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.Sequence.NewWay
 {
-	public static class Step3_IdentifyParticipant
-	{
-		public static string IdentifyParticipants(string flowUseCases)
-		{
-			return @"
+    public static class Step3_IdentifyParticipant
+    {
+        public static string IdentifyParticipants(string flowUseCases)
+        {
+            return @"
 				You are a senior software engineer with deep knowledge of sequence diagrams.
 
 				You are given a list of steps called combinedFlow from a software use case specification. This list includes basic, alternative, and exception flows.
-
+" + Prompts.LanguageRules + @"
 				Your task is to identify the two participants involved in each step:
 				- ""sender"": the actor or system that initiates or performs the action
 				- ""receiver"": the actor, system, or component that receives or reacts to the action
@@ -29,6 +31,6 @@
 
 				Here is the combined flow to process:
 			" + flowUseCases;
-		}
-	}
+        }
+    }
 }

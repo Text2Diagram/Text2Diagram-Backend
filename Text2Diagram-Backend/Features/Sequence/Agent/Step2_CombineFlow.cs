@@ -1,22 +1,23 @@
 ﻿using Microsoft.SemanticKernel;
+using Text2Diagram_Backend.Features.Flowchart;
 
 namespace Text2Diagram_Backend.Features.Sequence.NewWay
 {
-	public static class Step2_CombineFlow
-	{
-		//private readonly Kernel kernel;
-		//private readonly ILogger<AnalyzerForSequence> logger;
-		//public Step2_CombineFlow(Kernel kernel, ILogger<AnalyzerForSequence> logger)
-		//{
-		//	this.kernel = kernel;
-		//	this.logger = logger;
-		//}
+    public static class Step2_CombineFlow
+    {
+        //private readonly Kernel kernel;
+        //private readonly ILogger<AnalyzerForSequence> logger;
+        //public Step2_CombineFlow(Kernel kernel, ILogger<AnalyzerForSequence> logger)
+        //{
+        //	this.kernel = kernel;
+        //	this.logger = logger;
+        //}
 
-		public static string CombineFlowsPromt(string flowUseCases)
-		{
-			return @"
+        public static string CombineFlowsPromt(string flowUseCases)
+        {
+            return @"
 			You are a senior software architect.
-
+" + Prompts.LanguageRules + @"
 				You are given a use case with 3 flows: basicFlow, alternativeFlows, and exceptionFlows.
 
 				Please analyze and merge these flows into a single sequential list of steps that represents the full logic of this use case execution — including all main, alternative, and exceptional paths.
@@ -39,6 +40,6 @@ namespace Text2Diagram_Backend.Features.Sequence.NewWay
 
 				Use the data below:
 			" + flowUseCases;
-		}
-	}
+        }
+    }
 }

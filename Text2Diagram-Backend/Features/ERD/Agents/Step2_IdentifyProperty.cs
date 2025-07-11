@@ -1,4 +1,6 @@
-﻿namespace Text2Diagram_Backend.Features.ERD.Agents
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.ERD.Agents
 {
     public static class Step2_IdentifyProperty
     {
@@ -6,6 +8,7 @@
         {
             return @"
 You are a professional software architect assisting in building a structured Entity Relationship Diagram (ERD) from software requirements.
+" + Prompts.LanguageRules + @"
 In the previous step, the following Entities were identified:
 ### Entities:"
 + entities + @"

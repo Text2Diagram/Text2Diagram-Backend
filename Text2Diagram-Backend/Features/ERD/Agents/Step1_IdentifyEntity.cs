@@ -1,12 +1,15 @@
-﻿namespace Text2Diagram_Backend.Features.ERD.Agents
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.ERD.Agents
 {
-	public static class Step1_IdentifyEntity
-	{
-		public static string GetPromtIdentifyEntity(string input)
-		{
-			return @"
+    public static class Step1_IdentifyEntity
+    {
+        public static string GetPromtIdentifyEntity(string input)
+        {
+            return @"
 You are an expert in analyzing software requirement specifications and extracting core data models for building Entity Relationship Diagrams (ERD). 
 Your task is to read the input below and identify all the relevant **Entities** described or implied. 
+" + Prompts.LanguageRules + @"
 ---
 🔍 **Definition of an Entity**:
 An Entity represents a core object or concept in the domain that has a distinct identity and typically corresponds to a table in a relational database. 
@@ -32,6 +35,6 @@ Think of entities as **“things or concepts that the system needs to keep infor
 
 Here is the input to analyze:
 " + input;
-		}
-	}
+        }
+    }
 }

@@ -1,11 +1,14 @@
-﻿namespace Text2Diagram_Backend.Features.ERD.Agents
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.ERD.Agents
 {
-	public static class Step3_IdentifyRelation
-	{
-		public static string PromtIdentifyRelation(string input, string entity)
-		{
-			return @"
+    public static class Step3_IdentifyRelation
+    {
+        public static string PromtIdentifyRelation(string input, string entity)
+        {
+            return @"
 You are a software modeling assistant. Your task is to analyze the user requirements below and identify the relationships between entities in the system, including how many instances of each entity can be related to the other.
+" + Prompts.LanguageRules + @"
 ---
 📌 Definitions and Rules:
 - You are given a list of identified entities in the system.
@@ -26,7 +29,7 @@ You are a software modeling assistant. Your task is to analyze the user requirem
 - Avoid duplicate or reversed versions of the same relationship.
 ---
 🧱 Entity List:
-"+ entity + @"
+" + entity + @"
 ---
 📥 User Requirement Input:" + input + @"
 ---
@@ -43,6 +46,6 @@ Return the list of relationships using the format below. Output must be a valid 
   }
 ]
 ";
-		}
-	}
+        }
+    }
 }

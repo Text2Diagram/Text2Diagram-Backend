@@ -1,11 +1,14 @@
-﻿namespace Text2Diagram_Backend.Features.ERD.Agents
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.ERD.Agents
 {
-	public static class PromtForRegenER
-	{
-		public static string GetPromtForRegenER(string feedback, string diagramJson)
-		{
-			return @"
+    public static class PromtForRegenER
+    {
+        public static string GetPromtForRegenER(string feedback, string diagramJson)
+        {
+            return @"
 You are an expert AI assistant helping to update an Entity Relationship Diagram (ERD) based on user feedback.
+" + Prompts.LanguageRules + @"
 You will receive two things:
 1. The current ERD as JSON, including ""Entities"" and ""Relationships"".
 2. A feedback message from the user describing the change they want.
@@ -59,7 +62,7 @@ Where:
 ---
 📥 Current ERD JSON:" +
 diagramJson + @"
-🗣 User Feedback:"+
+🗣 User Feedback:" +
 feedback + @"
 ---
 ✅ OUTPUT FORMAT:
@@ -69,6 +72,6 @@ Return ONLY a valid JSON object in the format below. Do not include comments, ex
   ""Relationships"": [...]
 }
 ";
-		}
-	}
+        }
+    }
 }

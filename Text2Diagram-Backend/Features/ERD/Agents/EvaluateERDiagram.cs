@@ -1,12 +1,15 @@
-﻿namespace Text2Diagram_Backend.Features.ERD.Agents
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.ERD.Agents
 {
-	public static class EvaluateERDiagram
-	{
-		public static string PromptEvaluateERDiagram(string input, string mermaidCode)
-		{
-			return @"
+    public static class EvaluateERDiagram
+    {
+        public static string PromptEvaluateERDiagram(string input, string mermaidCode)
+        {
+            return @"
 You are an expert software architecture AI specializing in validating Entity-Relationship Diagrams (ERDs) against user requirements.
----
+" + Prompts.LanguageRules + @"
+            ---
 ### TASK:
 Your job is to carefully analyze whether the **ER diagram (written in Mermaid syntax)** truly and **logically reflects the user’s intent** as described in the input below.
 You must evaluate whether the diagram:
@@ -33,6 +36,6 @@ input + @"
 
 ER DIAGRAM (Mermaid Syntax)" +
 mermaidCode;
-		}
-	}
+        }
+    }
 }

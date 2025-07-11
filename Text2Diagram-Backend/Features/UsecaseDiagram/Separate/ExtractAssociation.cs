@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
@@ -25,6 +26,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                     ### TASK:
                     From the following software requirement description, identify all **associations** between actors and use cases.
                     An association represents a direct interaction between an actor and a use case — e.g., the actor initiates the use case or is the primary recipient of its result.
+                    {Prompts.LanguageRules}
                     Description:
                     {input}
                     Actors:

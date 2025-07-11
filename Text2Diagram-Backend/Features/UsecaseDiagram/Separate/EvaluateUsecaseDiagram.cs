@@ -1,10 +1,12 @@
-﻿namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
 {
     public class EvaluateUsecaseDiagram
     {
         public static string PromptEvaluateUsecaseDiagram(string input, string diagramjson)
         {
-            string prompt =  $"""
+            string prompt = $"""
             You are an expert software modeling AI specializing in validating **Use Case Diagrams** based on natural language requirements.
             ---
             ### TASK:
@@ -31,6 +33,7 @@
             ```
             """
             + $"""
+            {Prompts.LanguageRules}
             INPUT DESCRIPTION (User Requirement): {input}
             ER DIAGRAM (Json Result)" + {diagramjson}
             """;

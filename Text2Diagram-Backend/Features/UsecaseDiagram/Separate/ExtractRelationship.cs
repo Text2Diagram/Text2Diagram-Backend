@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
@@ -19,6 +20,8 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                 From the following software requirement description and list of use cases, identify **include** and **extend** relationships between the use cases.
                 Description:{input}
                 Usecases:[{useCaseList}]
+
+                {Prompts.LanguageRules}
                 """
                 +
                 """

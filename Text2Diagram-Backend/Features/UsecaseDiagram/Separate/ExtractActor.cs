@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
@@ -9,7 +10,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
         {
             var prompt = $"""
                 You are analyzing a software requirement specification in order to build a Use Case Diagram.
-
+                {Prompts.LanguageRules}
                 ### TASK:
                 From the following software requirement description, identify all **actors** — external entities (e.g. people, organizations, or external systems) that interact directly with the system.
 
@@ -79,7 +80,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
                 {
                     throw new InvalidOperationException("Actor name cannot be null or empty.");
                 }
-                actors.Add(new Actor { Name = name});
+                actors.Add(new Actor { Name = name });
             }
             return actors;
         }

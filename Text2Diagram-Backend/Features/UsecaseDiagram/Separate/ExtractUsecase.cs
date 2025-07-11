@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using Text2Diagram_Backend.Features.Flowchart;
 using Text2Diagram_Backend.Features.UsecaseDiagram.Components;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
@@ -12,7 +13,7 @@ namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
 
                 ### TASK:
                 From the following software requirement description, extract all **use cases** — these are distinct functionalities or services the system provides in response to an actor's interaction.
-
+                {Prompts.LanguageRules}
                 {input}
                 """
             +

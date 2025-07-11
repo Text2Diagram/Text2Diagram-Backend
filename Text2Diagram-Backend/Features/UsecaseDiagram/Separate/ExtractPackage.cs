@@ -1,4 +1,6 @@
-﻿namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
+﻿using Text2Diagram_Backend.Features.Flowchart;
+
+namespace Text2Diagram_Backend.Features.UsecaseDiagram.Separate
 {
     public class ExtractPackage
     {
@@ -21,6 +23,8 @@
                 - a list of UseCases,
                 - Associations between the two,
                 - and Include/Extend relationships related to the UseCases in that package.
+
+                {Prompts.LanguageRules}
 
                 {input}
                 """

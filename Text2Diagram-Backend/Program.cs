@@ -172,7 +172,6 @@ builder.Services.AddScoped<AlternativeFlowExtractor>();
 builder.Services.AddScoped<ExceptionFlowExtractor>();
 builder.Services.AddScoped<FlowCategorizer>();
 builder.Services.AddScoped<DecisionNodeInserter>();
-builder.Services.AddScoped<RejoinPointIdentifier>();
 builder.Services.AddScoped<FlowchartDiagramEvaluator>();
 
 builder.Services.AddHttpContextAccessor();

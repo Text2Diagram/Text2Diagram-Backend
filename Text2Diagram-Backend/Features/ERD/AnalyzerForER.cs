@@ -32,18 +32,18 @@ public class AnalyzerForER
     private readonly Kernel kernel;
     private readonly ILogger<AnalyzerForER> logger;
     private readonly ILLMService1 _llmService;
-	private const int MaxRetries = 1;
+    private const int MaxRetries = 1;
     private static readonly string[] ValidRelationshipTypes = Enum.GetNames(typeof(RelationshipType));
     private static readonly string[] ValidPropertyRoles = new[] { "PK", "FK", "" };
-	private readonly IHubContext<ThoughtProcessHub> _hubContext;
+    private readonly IHubContext<ThoughtProcessHub> _hubContext;
 
-	public AnalyzerForER(Kernel kernel, ILogger<AnalyzerForER> logger, ILLMService1 lLMService, IHubContext<ThoughtProcessHub> hubContext)
+    public AnalyzerForER(Kernel kernel, ILogger<AnalyzerForER> logger, ILLMService1 lLMService, IHubContext<ThoughtProcessHub> hubContext)
     {
         this.kernel = kernel;
         this.logger = logger;
-		_llmService = lLMService;
-		_hubContext = hubContext;
-	}
+        _llmService = lLMService;
+        _hubContext = hubContext;
+    }
 
     /// <summary>
     /// Analyzes a domain description to generate an Entity Relationship Diagram.
@@ -67,69 +67,69 @@ public class AnalyzerForER
             {
                 //step 1: Identify entities
                 string promtIdentifyEntities = Step1_IdentifyEntity.GetPromtIdentifyEntity(domainDescription);
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying entities....");
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying entities....");
                 var responseIdentifyEntities = await _llmService.GenerateContentAsync(promtIdentifyEntities);
                 var textContent = responseIdentifyEntities.Content ?? "";
-				var finalIdentifyEntities = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+                var finalIdentifyEntities = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listEntity = DeserializeLLMResponseFunc.DeserializeLLMResponse<string>(finalIdentifyEntities);
                 //step 2: Identify properties
                 string promtIdentifyProperties = Step2_IdentifyProperty.PromtIdentifyProperty(domainDescription, JsonConvert.SerializeObject(listEntity));
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying properties...");
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying properties...");
                 var responseIdentifyProperties = await _llmService.GenerateContentAsync(promtIdentifyProperties);
                 textContent = responseIdentifyProperties.Content ?? "";
-				var finalIdentifyProperties = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+                var finalIdentifyProperties = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listCompletedEntity = DeserializeLLMResponseFunc.DeserializeLLMResponse<Entity>(finalIdentifyProperties);
                 //step 3: Identify relationships
                 string promtIdentifyRelationships = Step3_IdentifyRelation.PromtIdentifyRelation(domainDescription, JsonConvert.SerializeObject(listEntity));
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying relationships...");
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying relationships...");
                 var responseIdentifyRelationships = await _llmService.GenerateContentAsync(promtIdentifyRelationships);
                 textContent = responseIdentifyRelationships.Content ?? "";
-				var finalIdentifyRelationships = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+                var finalIdentifyRelationships = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
                 var listRelationship = DeserializeLLMResponseFunc.DeserializeLLMResponse<Relationship>(finalIdentifyRelationships);
-				// Deserialize JSON to ERDiagram
-				var diagram = new ERDiagram
+                // Deserialize JSON to ERDiagram
+                var diagram = new ERDiagram
                 {
                     Entites = listCompletedEntity,
-					Relationships = listRelationship
-				};
+                    Relationships = listRelationship
+                };
                 await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating ER diagram...");
                 string mermaidCode = GenerateMermaidCode(diagram);
-				//step 4: Validate and structure the ER diagram
+                //step 4: Validate and structure the ER diagram
                 string promtEvaluateERDiagram = EvaluateERDiagram.PromptEvaluateERDiagram(domainDescription, mermaidCode);
-				await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating ER diagram...");
-				var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateERDiagram);
-				var textEvaluate = responseEvaluate.Content ?? "";
-				var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
-				var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
-				// Check if the evaluation indicates the diagram is accurate
-				string diagramJson = JsonConvert.SerializeObject(diagram);
-				if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
-				{
+                await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating ER diagram...");
+                var responseEvaluate = await _llmService.GenerateContentAsync(promtEvaluateERDiagram);
+                var textEvaluate = responseEvaluate.Content ?? "";
+                var finalEvaluate = ExtractJsonFromTextHelper.ExtractJsonFromText(textEvaluate);
+                var evaluateResult = DeserializeLLMResponseFunc.DeserializeLLMResponse<EvaluateResponseDto>(finalEvaluate);
+                // Check if the evaluation indicates the diagram is accurate
+                string diagramJson = JsonConvert.SerializeObject(diagram);
+                if (evaluateResult == null || evaluateResult.Count == 0 || evaluateResult[0].IsAccurate)
+                {
                     await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated ER diagram successfully!");
                     // If the diagram is accurate, return it
                     return new DiagramContent()
-					{
-						mermaidCode = mermaidCode,
-						diagramJson = diagramJson
-					};
-				}
-				else
-				{
-					var promtValidate = PromtForRegenER.GetPromtForRegenER(JsonConvert.SerializeObject(evaluateResult[0]), diagramJson);
-					await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modifying ER diagram...");
-					var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
-					var textValidate = responseValidate.Content ?? "";
-					var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textValidate);
-					// Deserialize JSON to ERDiagram
-					var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);
-					string mermaidCodeAfterEvaluate = GenerateMermaidCode(target[0]);
+                    {
+                        mermaidCode = mermaidCode,
+                        diagramJson = diagramJson
+                    };
+                }
+                else
+                {
+                    var promtValidate = PromtForRegenER.GetPromtForRegenER(JsonConvert.SerializeObject(evaluateResult[0]), diagramJson);
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Modifying ER diagram...");
+                    var responseValidate = await _llmService.GenerateContentAsync(promtValidate);
+                    var textValidate = responseValidate.Content ?? "";
+                    var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textValidate);
+                    // Deserialize JSON to ERDiagram
+                    var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);
+                    string mermaidCodeAfterEvaluate = GenerateMermaidCode(target[0]);
                     await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generated ER diagram successfully!");
                     return new DiagramContent()
-					{
-						mermaidCode = mermaidCodeAfterEvaluate,
-						diagramJson = JsonConvert.SerializeObject(target[0])
-					};
-				}
+                    {
+                        mermaidCode = mermaidCodeAfterEvaluate,
+                        diagramJson = JsonConvert.SerializeObject(target[0])
+                    };
+                }
             }
             catch (System.Text.Json.JsonException ex)
             {
@@ -150,64 +150,64 @@ public class AnalyzerForER
 
     public async Task<DiagramContent> AnalyzeForReGenAsync(string feedback, string diagramJson)
     {
-		string promtRegenForEr = PromtForRegenER.GetPromtForRegenER(feedback, diagramJson);
-		var res = await _llmService.GenerateContentAsync(promtRegenForEr);
-		string textContent = res.Content ?? "";
-		var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
+        string promtRegenForEr = PromtForRegenER.GetPromtForRegenER(feedback, diagramJson);
+        var res = await _llmService.GenerateContentAsync(promtRegenForEr);
+        string textContent = res.Content ?? "";
+        var final = ExtractJsonFromTextHelper.ExtractJsonFromText(textContent);
         // Deserialize JSON to ERDiagram
         var target = DeserializeLLMResponseFunc.DeserializeLLMResponse<ERDiagram>(final);
         string mermaidCode = GenerateMermaidCode(target[0]);
-		return new DiagramContent()
-		{
-			mermaidCode = mermaidCode,
-			diagramJson = JsonConvert.SerializeObject(target[0])
-		};
-	}
-	/// <summary>
-	/// Generates a prompt for the LLM to extract ER diagram elements from a domain description.
-	/// </summary>
-	private string GenerateMermaidCode(ERDiagram diagram)
-	{
-		var mermaid = new StringBuilder();
+        return new DiagramContent()
+        {
+            mermaidCode = mermaidCode,
+            diagramJson = JsonConvert.SerializeObject(target[0])
+        };
+    }
+    /// <summary>
+    /// Generates a prompt for the LLM to extract ER diagram elements from a domain description.
+    /// </summary>
+    private string GenerateMermaidCode(ERDiagram diagram)
+    {
+        var mermaid = new StringBuilder();
 
-		// Start ER diagram definition
-		mermaid.AppendLine("erDiagram");
+        // Start ER diagram definition
+        mermaid.AppendLine("erDiagram");
 
-		foreach (var entity in diagram.Entites)
-		{
-			mermaid.AppendLine($"    {entity.Name} {{");
-			foreach (var prop in entity.Properties)
-			{
-				mermaid.AppendLine($"        {prop.Type} {prop.Name.Trim().Replace(' ', '_')} {prop.Role} \"{prop.Description}\"");
-			}
-			mermaid.AppendLine("    }");
-		}
+        foreach (var entity in diagram.Entites)
+        {
+            mermaid.AppendLine($"    {entity.Name} {{");
+            foreach (var prop in entity.Properties)
+            {
+                mermaid.AppendLine($"        {prop.Type} {prop.Name.Trim().Replace(' ', '_')} {prop.Role} \"{prop.Description}\"");
+            }
+            mermaid.AppendLine("    }");
+        }
 
-		foreach (var relation in diagram.Relationships)
-		{
-			string sourceConnector = GetEdgeConnector(relation.DestinationRelationshipType, true);
-			string destConnector = GetEdgeConnector(relation.SourceRelationshipType, false);
-			mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
-		}
+        foreach (var relation in diagram.Relationships)
+        {
+            string sourceConnector = GetEdgeConnector(relation.DestinationRelationshipType, true);
+            string destConnector = GetEdgeConnector(relation.SourceRelationshipType, false);
+            mermaid.AppendLine($"    {relation.SourceEntityName} {sourceConnector}--{destConnector} {relation.DestinationEntityName} : \"{relation.Description}\"");
+        }
 
-		return mermaid.ToString();
-	}
+        return mermaid.ToString();
+    }
 
-	/// <summary>
-	/// Determines the appropriate connector symbol for a relationship type.
-	/// </summary>
-	/// <param name="type">The relationship type to evaluate</param>
-	/// <param name="isLeft">Indicates if this is the left (source) side of the relationship</param>
-	/// <returns>A string representing the Mermaid.js connector symbol</returns>
-	private string GetEdgeConnector(RelationshipType type, bool isLeft)
-	{
-		return type switch
-		{
-			RelationshipType.ZeroOrOne => isLeft ? "|o" : "o|",
-			RelationshipType.ExactlyOne => "||",
-			RelationshipType.ZeroOrMore => isLeft ? "}o" : "o{",
-			RelationshipType.OneOrMore => isLeft ? "}|" : "|{",
-			_ => isLeft ? "|o" : "o|"
-		};
-	}
+    /// <summary>
+    /// Determines the appropriate connector symbol for a relationship type.
+    /// </summary>
+    /// <param name="type">The relationship type to evaluate</param>
+    /// <param name="isLeft">Indicates if this is the left (source) side of the relationship</param>
+    /// <returns>A string representing the Mermaid.js connector symbol</returns>
+    private string GetEdgeConnector(RelationshipType type, bool isLeft)
+    {
+        return type switch
+        {
+            RelationshipType.ZeroOrOne => isLeft ? "|o" : "o|",
+            RelationshipType.ExactlyOne => "||",
+            RelationshipType.ZeroOrMore => isLeft ? "}o" : "o{",
+            RelationshipType.OneOrMore => isLeft ? "}|" : "|{",
+            _ => isLeft ? "|o" : "o|"
+        };
+    }
 }

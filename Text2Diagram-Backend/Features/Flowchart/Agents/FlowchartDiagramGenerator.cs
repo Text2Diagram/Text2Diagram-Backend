@@ -16,7 +16,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
     private readonly ILLMService3 _llmService3;
     private readonly UseCaseSpecAnalyzerForFlowchart _analyzer;
     private readonly DecisionNodeInserter _decisionNodeInserter;
-    private readonly RejoinPointIdentifier _rejoinPointIdentifier;
     private readonly IHubContext<ThoughtProcessHub> _hubContext;
     private readonly FlowchartDiagramEvaluator _flowchartDiagramEvaluator;
 
@@ -26,7 +25,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         ILLMService3 llmService3,
         UseCaseSpecAnalyzerForFlowchart analyzer,
         DecisionNodeInserter decisionNodeInserter,
-        RejoinPointIdentifier rejoinPointIdentifier,
         IHubContext<ThoughtProcessHub> hubContext,
         FlowchartDiagramEvaluator flowchartDiagramEvaluator)
     {
@@ -35,7 +33,6 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _llmService3 = llmService3;
         _analyzer = analyzer;
         _decisionNodeInserter = decisionNodeInserter;
-        _rejoinPointIdentifier = rejoinPointIdentifier;
         _hubContext = hubContext;
         _flowchartDiagramEvaluator = flowchartDiagramEvaluator;
     }
@@ -58,23 +55,19 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         _logger.LogInformation("[After inserting decision nodes] Flows: {Flows}", JsonSerializer.Serialize(modifiedFlows));
         _logger.LogInformation("[Decision nodes] Flows: {Flows}", JsonSerializer.Serialize(branchingPoints));
 
-        modifiedFlows = await _rejoinPointIdentifier.AddRejoinPointsAsync(modifiedFlows);
-        _logger.LogInformation("[After adding rejoin nodes] Flows: {Flows}", JsonSerializer.Serialize(modifiedFlows));
         var flowchart = new FlowchartDiagram(modifiedFlows, branchingPoints);
 
         _logger.LogInformation("Flowchart: {Flowchart}", JsonSerializer.Serialize(flowchart));
         await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Evaluating the diagram...");
-        //var evaluationResult = await _flowchartDiagramEvaluator.EvaluateFlowchartDiagramAsync(input, flowchart);
+        var validatedFlowchart = await ValidateDiagram(flowchart);
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
+        string mermaidCode = GenerateMermaidCode(flowchart);
 
         string jsonString = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
         {
             WriteIndented = true
         });
         _logger.LogInformation("{JsonString}", jsonString);
-
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
-
-        string mermaidCode = await GenerateMermaidCodeAsync(flowchart);
 
         _logger.LogInformation("Generated Mermaid code: {MermaidCode}", mermaidCode);
 
@@ -92,27 +85,23 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
         var response = await ApplyCommandsAsync(feedback, diagramJson);
         var jsonNode = FlowchartHelpers.ValidateJson(response);
-
-        var flowsNode = jsonNode["Flows"];
-        var branchingPointsNode = jsonNode["BranchingPoints"];
-
-        if (flowsNode == null || branchingPointsNode == null)
+        if (jsonNode == null)
         {
-            _logger.LogError("Invalid JSON structure: 'Flows' or 'BranchingPoints' missing");
-            throw new InvalidOperationException("Invalid JSON structure: 'Flows' or 'BranchingPoints' missing");
+            _logger.LogError("Invalid JSON response from LLM for feedback: {Feedback}", feedback);
+            throw new InvalidOperationException("Invalid JSON response from LLM");
         }
 
-        var flows = flowsNode.AsArray()
-            .Select(node => node.Deserialize<Flow>())
-            .Where(flow => flow != null)
-            .Cast<Flow>()
-            .ToList();
+        var flows = jsonNode["Flows"]?.AsArray()
+            ?.Select(node => node.Deserialize<Flow>())
+            ?.Where(flow => flow != null)
+            ?.Cast<Flow>()
+            ?.ToList() ?? new List<Flow>();
 
-        var branchingPoints = branchingPointsNode.AsArray()
-            .Select(node => node.Deserialize<BranchingPoint>())
-            .Where(bp => bp != null)
-            .Cast<BranchingPoint>()
-            .ToList();
+        var branchingPoints = jsonNode["BranchingPoints"]?.AsArray()
+            ?.Select(node => node.Deserialize<BranchingPoint>())
+            ?.Where(bp => bp != null)
+            ?.Cast<BranchingPoint>()
+            ?.ToList() ?? new List<BranchingPoint>();
 
         if (!flows.Any())
         {
@@ -121,14 +110,20 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
 
         var flowchart = new FlowchartDiagram(flows, branchingPoints);
-        var mermaidCode = await GenerateMermaidCodeAsync(flowchart);
-        return new DiagramContent()
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Validating flowchart diagram...");
+        var validatedFlowchart = await ValidateDiagram(flowchart);
+
+        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
+        var mermaidCode = GenerateMermaidCode(validatedFlowchart);
+
+        string jsonString = JsonSerializer.Serialize(validatedFlowchart, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        return new DiagramContent
         {
             mermaidCode = mermaidCode,
-            diagramJson = JsonSerializer.Serialize(flowchart, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            })
+            diagramJson = jsonString
         };
     }
 
@@ -196,7 +191,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
     }
 
-    public async Task<string> GenerateMermaidCodeAsync(FlowchartDiagram flowchart)
+    public string GenerateMermaidCode(FlowchartDiagram flowchart)
     {
         var mermaid = new StringBuilder();
         mermaid.AppendLine("graph TD");
@@ -215,8 +210,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         foreach (var edge in basicFlow.Edges)
         {
             var targetNode = allNodes.ContainsKey(edge.TargetId) ? allNodes[edge.TargetId] : null;
-            var isExceptionDecision = subflows.Any(s => s.FlowType == FlowType.Exception && edge.TargetId.StartsWith($"{s.Name}_") && targetNode?.Type == NodeType.Decision);
-            if (!isExceptionDecision && !allEdges.Any(e => e.SourceId == edge.SourceId && e.TargetId == edge.TargetId && e.Label == edge.Label))
+            if (targetNode == null)
+            {
+                _logger.LogWarning("Skipping edge with invalid target node: {SourceId} to {TargetId}", edge.SourceId, edge.TargetId);
+                continue;
+            }
+            if (!allEdges.Any(e => e.SourceId == edge.SourceId && e.TargetId == edge.TargetId && e.Label == edge.Label))
             {
                 allEdges.Add(edge);
             }
@@ -232,9 +231,12 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             var branchingPoint = flowchart.BranchingPoints.FirstOrDefault(b => b.SubFlowName == subflow.Name);
             if (branchingPoint == null)
             {
+                _logger.LogWarning("Subflow {SubFlowName} has no branching point.", subflow.Name);
+                mermaid.AppendLine($"    %% Warning: Subflow '{subflow.Name}' is unconnected.");
                 continue;
             }
             var branchNodeId = branchingPoint.BranchNodeId;
+            var rejoinNodeId = branchingPoint.RejoinNodeId;
             if (string.IsNullOrEmpty(branchNodeId))
             {
                 _logger.LogWarning("Subflow {SubFlowName} has no branching point.", subflow.Name);
@@ -257,7 +259,9 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             }
 
             var reachableNodes = GetReachableNodes(subflow, entryNode);
-            foreach (var node in reachableNodes.Where(n => n.Type != NodeType.Start && !(subflow.FlowType == FlowType.Exception && n.Type == NodeType.Decision)))
+            foreach (var node in reachableNodes.Where(n => n.Type != NodeType.Start &&
+                !(subflow.FlowType == FlowType.Exception && n.Type == NodeType.Decision) &&
+                !(subflow.FlowType == FlowType.Alternative && n.Type == NodeType.Decision)))
             {
                 var nodeId = $"{subflow.Name}_{node.Id}";
                 if (!allNodes.ContainsKey(nodeId))
@@ -280,9 +284,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                 }
 
                 if (sourceNode.Type == NodeType.Start || targetNode.Type == NodeType.Start ||
-                    (subflow.FlowType == FlowType.Exception && (sourceNode.Type == NodeType.Decision || targetNode.Type == NodeType.Decision)))
+                    (subflow.FlowType == FlowType.Exception && (sourceNode.Type == NodeType.Decision || targetNode.Type == NodeType.Decision)) ||
+                    (subflow.FlowType == FlowType.Alternative && (sourceNode.Type == NodeType.Decision || targetNode.Type == NodeType.Decision)))
                 {
-                    _logger.LogWarning("Skipping edge involving start or decision node in exception subflow {SubFlowName}: {SourceId} to {TargetId}",
+                    _logger.LogWarning("Skipping edge involving start or decision node in subflow {SubFlowName}: {SourceId} to {TargetId}",
                         subflow.Name, edge.SourceId, edge.TargetId);
                     continue;
                 }
@@ -296,7 +301,8 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
                     continue;
                 }
 
-                var newEdge = new FlowEdge(sourceId, targetId, edge.Type, edge.Label);
+                var edgeType = edge.Type == EdgeType.Arrow && subflow.FlowType == FlowType.Exception ? EdgeType.OpenArrow : edge.Type;
+                var newEdge = new FlowEdge(sourceId, targetId, edgeType, edge.Label);
                 if (!allEdges.Any(e => e.SourceId == newEdge.SourceId && e.TargetId == newEdge.TargetId && e.Label == newEdge.Label))
                 {
                     allEdges.Add(newEdge);
@@ -305,14 +311,30 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
 
             var entryNodeId = $"{subflow.Name}_{entryNode.Id}";
             var branchEdgeLabel = subflow.FlowType == FlowType.Exception ? "No" : "Yes";
-            var branchEdge = new FlowEdge(branchNodeId, entryNodeId, EdgeType.Arrow, branchEdgeLabel);
+            var branchEdgeType = subflow.FlowType == FlowType.Exception ? EdgeType.OpenArrow : EdgeType.Arrow;
+            var branchEdge = new FlowEdge(branchNodeId, entryNodeId, branchEdgeType, branchEdgeLabel);
             if (!allEdges.Any(e => e.SourceId == branchEdge.SourceId && e.TargetId == branchEdge.TargetId && e.Label == branchEdge.Label))
             {
                 allEdges.Add(branchEdge);
             }
-        }
 
-        //(allNodes, allEdges) = await CleanupFlowchartAsync(allNodes, allEdges, flowchart.Flows, subflows);
+            // Add rejoin edge dynamically
+            var endNode = subflow.Nodes.FirstOrDefault(n => n.Type == NodeType.End);
+            if (endNode != null && !string.IsNullOrEmpty(rejoinNodeId) && allNodes.ContainsKey(rejoinNodeId))
+            {
+                var endNodeId = $"{subflow.Name}_{endNode.Id}";
+                var rejoinEdge = new FlowEdge(endNodeId, rejoinNodeId, EdgeType.Arrow, "Rejoin");
+                if (!allEdges.Any(e => e.SourceId == rejoinEdge.SourceId && e.TargetId == rejoinEdge.TargetId && e.Label == rejoinEdge.Label))
+                {
+                    allEdges.Add(rejoinEdge);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No valid rejoin point for subflow {SubFlowName}. End node: {EndNodeId}, Rejoin node: {RejoinNodeId}",
+                    subflow.Name, endNode?.Id, rejoinNodeId);
+            }
+        }
 
         // Generate node definitions
         mermaid.AppendLine("    %% Basic Flow Nodes");
@@ -339,10 +361,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         foreach (var edge in allEdges.OrderBy(e => e.SourceId))
         {
             string connector = GetEdgeConnector(edge.Type);
-            bool isRejoinEdge = edge.SourceId.EndsWith("_end_1") && edge.TargetId.StartsWith("basic_flow_");
+            bool isRejoinEdge = edge.Label == "Rejoin";
             string edgeLine = isRejoinEdge
                 ? $"    %% Rejoin to basic flow\n    {edge.SourceId} {connector} {edge.TargetId}"
-                : string.IsNullOrEmpty(edge.Label) || edge.Label == "Rejoin"
+                : string.IsNullOrEmpty(edge.Label)
                     ? $"    {edge.SourceId} {connector} {edge.TargetId}"
                     : $"    {edge.SourceId} {connector}|{edge.Label}| {edge.TargetId}";
             mermaid.AppendLine(edgeLine);
@@ -351,160 +373,106 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         return mermaid.ToString();
     }
 
-    private async Task<(Dictionary<string, FlowNode>, List<FlowEdge>)> CleanupFlowchartAsync(
-        Dictionary<string, FlowNode> allNodes,
-        List<FlowEdge> allEdges,
-        List<Flow> flows,
-        List<Flow> subflows)
+    public async Task<FlowchartDiagram> ValidateDiagram(FlowchartDiagram flowchart)
     {
-        var basicFlow = flows.First(f => f.FlowType == FlowType.Basic);
-        var nodesJson = JsonSerializer.Serialize(allNodes.Values.Select(n => new { n.Id, n.Label, Type = n.Type.ToString() }));
-        var edgesJson = JsonSerializer.Serialize(allEdges.Select(e => new { e.SourceId, e.TargetId, e.Label, Type = e.Type.ToString() }));
+        var basicFlow = flowchart.Flows.FirstOrDefault(f => f.FlowType == FlowType.Basic)
+            ?? throw new InvalidOperationException("Basic flow is required.");
+        var subflows = flowchart.Flows.Where(f => f.FlowType is FlowType.Alternative or FlowType.Exception).ToList();
+        var nodesJson = JsonSerializer.Serialize(
+            flowchart.Flows.SelectMany(f => f.Nodes).Select(n => new { n.Id, n.Label, Type = n.Type.ToString() }));
+        var edgesJson = JsonSerializer.Serialize(
+            flowchart.Flows.SelectMany(f => f.Edges).Select(e => new { e.SourceId, e.TargetId, e.Label, Type = e.Type.ToString() }));
+        var branchingPointsJson = JsonSerializer.Serialize(
+            flowchart.BranchingPoints.Select(b => new { b.SubFlowName, b.BranchNodeId, b.RejoinNodeId }));
 
         var prompt = $"""
-            You are tasked with cleaning up a flowchart. Given the nodes and edges below, perform the following:
-            1. **Remove duplicate edges**: Remove edges with the same SourceId, TargetId, and Label, keeping only one (prefer Arrow over OpenArrow). For example, remove duplicates like:
-               - decision_locationServicesDisabled -->|No| locationServicesDisabled_exception_flow_inputoutput_1 and decision_locationServicesDisabled --o|No| locationServicesDisabled_exception_flow_inputoutput_1
-            2. **Correct basic flow sequence**: Ensure the basic flow follows these exact edges:
-               - basic_flow_start_1 --> decision_locationServicesDisabled
-               - decision_locationServicesDisabled -->|Yes| basic_flow_input_1
-               - basic_flow_input_1 --> basic_flow_input_2
-               - basic_flow_input_2 --> basic_flow_input_3
-               - basic_flow_input_3 --> decision_scheduleRide
-               - decision_scheduleRide -->|No| decision_paymentIssue
-               - decision_paymentIssue -->|Yes| decision_chooseSpecificDriver
-               - decision_chooseSpecificDriver -->|No| basic_flow_subroutine_1
-               - basic_flow_subroutine_1 --> decision_noDriversAvailable
-               - decision_noDriversAvailable -->|Yes| basic_flow_process_1
-               - basic_flow_process_1 --> basic_flow_end_1
-               Remove incorrect edges, e.g.:
-               - basic_flow_input_3 --> decision_chooseSpecificDriver
-               - decision_chooseSpecificDriver -->|No| decision_scheduleRide
-               - decision_scheduleRide -->|No| decision_paymentIssue
-            3. **Validate rejoin edges**: Ensure these rejoin edges are present:
-               - locationServicesDisabled_exception_flow_end_1 -->|Rejoin| basic_flow_input_1
-               - chooseSpecificDriver_alternative_flow_end_1 -->|Rejoin| basic_flow_process_1
-               Remove any rejoin edges for:
-               - scheduleRide_alternative_flow_end_1
-               - noDriversAvailable_exception_flow_end_1
-               - paymentIssue_exception_flow_end_1
-            4. **Remove redundant decision nodes and edges in exception flows**: Remove nodes and their edges, e.g.:
-               - locationServicesDisabled_exception_flow_decision_1
-               - noDriversAvailable_exception_flow_decision_1
-               - paymentIssue_exception_flow_decision_1
-               Redirect edges targeting these nodes to their successors, e.g.:
-               - decision_locationServicesDisabled -->|No| locationServicesDisabled_exception_flow_inputoutput_1
-               - decision_noDriversAvailable -->|No| noDriversAvailable_exception_flow_inputoutput_1
-               - decision_paymentIssue -->|No| paymentIssue_exception_flow_inputoutput_1
-            5. **Ensure node connectivity**: Add missing edges in subflows, e.g.:
-               - chooseSpecificDriver_alternative_flow_input_1 --> chooseSpecificDriver_alternative_flow_subroutine_1
-               - chooseSpecificDriver_alternative_flow_subroutine_1 --> chooseSpecificDriver_alternative_flow_end_1
-               - scheduleRide_alternative_flow_subroutine_1 --> scheduleRide_alternative_flow_end_1
-               - locationServicesDisabled_exception_flow_inputoutput_1 --> locationServicesDisabled_exception_flow_end_1
-               - noDriversAvailable_exception_flow_inputoutput_1 --> noDriversAvailable_exception_flow_inputoutput_2
-               - noDriversAvailable_exception_flow_inputoutput_2 --> noDriversAvailable_exception_flow_end_1
-               - paymentIssue_exception_flow_inputoutput_1 --> paymentIssue_exception_flow_end_1
-            6. **Ensure chooseSpecificDriver input node**: Add node chooseSpecificDriver_alternative_flow_input_1 (Label: "User selects a specific driver from a list", Type: InputOutput) if missing, with edge:
-               - decision_chooseSpecificDriver -->|Yes| chooseSpecificDriver_alternative_flow_input_1
+        You are tasked with validating and correcting a flowchart to ensure proper connectivity and logical structure. Given the nodes, edges, and branching points below, perform the following:
 
-            Nodes: {nodesJson}
-            Edges: {edgesJson}
-            """
-            +
-            """
-            Return JSON:
-            {
-                "Nodes": [{"Id": string, "Label": string, "Type": string}, ...],
-                "Edges": [{"SourceId": string, "TargetId": string, "Label": string, "Type": string}, ...]
-            }
+        1. Ensure subflow connectivity:
+           - For each subflow, ensure all nodes are connected in a logical sequence from start to end.
+           - Add missing edges, e.g., in the applyPromoCode subflow, ensure the validation node connects to both a success path (e.g., apply discount) and a failure path (e.g., display invalid code message).
+           - Example: Add edges like applyPromoCode_alternative_flow_subroutine_1 -->|Valid| applyPromoCode_alternative_flow_process_1 and applyPromoCode_alternative_flow_subroutine_1 -->|Invalid| applyPromoCode_alternative_flow_input_output_1 (add the input_output_1 node if missing).
+        2. Correct rejoin points:
+           - Validate each subflow's rejoin point (RejoinNodeId) to ensure it connects to a logical point in the basic flow.
+           - For alternative flows (e.g., applyPromoCode), rejoin at the next logical step (e.g., order processing, not the end).
+           - For exception flows (e.g., paymentFailure), rejoin at a retry point (e.g., payment decision) or continuation step.
+           - Example: Fix applyPromoCode_alternative_flow_end_1 to rejoin at basic_flow_subroutine_1, not basic_flow_input_3.
+        3. Remove redundant decision nodes:
+           - Remove decision nodes in subflows (e.g., itemOutOfStock_exception_flow_decision_1) and redirect edges to their successors.
+        4. Remove duplicate edges:
+           - Remove edges with the same SourceId, TargetId, and Label, preferring Arrow for basic/alternative flows and OpenArrow for exception flows.
+        5. Add missing nodes:
+           - Add missing nodes like applyPromoCode_alternative_flow_input_output_1 (Label: "Display invalid code message", Type: InputOutput) if needed.
+        6. Ensure edge types:
+           - Use OpenArrow for exception flow branches (e.g., decision_itemOutOfStock --o|No| itemOutOfStock_exception_flow_input_output_1).
+           - Use Arrow for basic and alternative flows and rejoin edges.
 
-            Include all nodes and edges, even if they are not modified. 
-            Ensure the output is valid JSON wrapped in ```json\n...\n``` code fences.
-            Do not include any additional text or explanations outside the JSON structure.
-            """;
+        Nodes: {nodesJson}
+        Edges: {edgesJson}
+        Branching Points: {branchingPointsJson}
+        Basic Flow Name: {basicFlow.Name}
+        Subflows: {JsonSerializer.Serialize(subflows.Select(s => new { s.Name, s.FlowType }))}
+        """
+        +
+        """
+        Return JSON:
+        ```json
+        {"Flows": [
+                {
+                    "Name": string,
+                    "FlowType": string,
+                    "Nodes": [{"Id": string, "Label": string, "Type": string}, ...],
+                    "Edges": [{"SourceId": string, "TargetId": string, "Label": string, "Type": string}, ...]
+                }, ...
+            ],
+            "BranchingPoints": [
+                {"SubFlowName": string, "BranchNodeId": string, "RejoinNodeId": string}, ...
+            ]
+        }
+        ```
+        Include all flows, nodes, edges, and branching points, even if unchanged. Ensure valid JSON wrapped in json\n...\n code fences.
+        Do not include additional text or explanations.
+        """;
 
         try
         {
             var response = await _llmService.GenerateContentAsync(prompt);
-            _logger.LogInformation("LLM cleanup response: {Response}", response.Content);
+            _logger.LogInformation("LLM validation response: {Response}", response.Content);
+
             var jsonResponse = FlowchartHelpers.ValidateJson(response.Content);
             if (jsonResponse == null)
             {
-                _logger.LogWarning("Invalid JSON response from LLM cleanup. Falling back to original nodes and edges.");
-                return (allNodes, allEdges);
+                _logger.LogWarning("Invalid JSON response from LLM validation. Returning original flowchart.");
+                return flowchart;
             }
 
-            var cleanedNodes = new Dictionary<string, FlowNode>();
-            var cleanedEdges = new List<FlowEdge>();
+            var flows = jsonResponse["Flows"]?.AsArray()
+                                            ?.Select(node => node.Deserialize<Flow>())
+                                            ?.Where(flow => flow != null)
+                                            ?.Cast<Flow>()
+                                            ?.ToList() ?? new List<Flow>();
 
-            if (jsonResponse["Nodes"]?.AsArray() is JsonArray nodesArray)
+            var branchingPoints = jsonResponse["BranchingPoints"]?.AsArray()
+            ?.Select(node => node.Deserialize<BranchingPoint>())
+            ?.Where(bp => bp != null)
+            ?.Cast<BranchingPoint>()
+            ?.ToList() ?? new List<BranchingPoint>();
+
+
+            if (!flows.Any() || flows.All(f => f.FlowType != FlowType.Basic))
             {
-                cleanedNodes = nodesArray
-                    .Where(n => n != null)
-                    .Select(n =>
-                    {
-                        try
-                        {
-                            var id = n!["Id"]?.GetValue<string>() ?? throw new JsonException("Node Id is missing");
-                            var label = n["Label"]?.GetValue<string>() ?? throw new JsonException("Node Label is missing");
-                            var type = n["Type"]?.GetValue<string>() ?? throw new JsonException("Node Type is missing");
-                            return new FlowNode(id, label, Enum.Parse<NodeType>(type));
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning("Failed to parse node: {ErrorMessage}", ex.Message);
-                            return null;
-                        }
-                    })
-                    .Where(n => n != null)
-                    .ToDictionary(n => n!.Id, n => n!);
+                _logger.LogWarning("LLM returned invalid flows or missing basic flow. Returning original flowchart.");
+                return flowchart;
             }
 
-            if (jsonResponse["Edges"]?.AsArray() is JsonArray edgesArray)
-            {
-                cleanedEdges = edgesArray
-                    .Where(e => e != null)
-                    .Select(e =>
-                    {
-                        try
-                        {
-                            var sourceId = e!["SourceId"]?.GetValue<string>() ?? throw new JsonException("Edge SourceId is missing");
-                            var targetId = e["TargetId"]?.GetValue<string>() ?? throw new JsonException("Edge TargetId is missing");
-                            var type = e["Type"]?.GetValue<string>() ?? throw new JsonException("Edge Type is missing");
-                            var label = e["Label"]?.GetValue<string>();
-                            return new FlowEdge(sourceId, targetId, Enum.Parse<EdgeType>(type), label);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning("Failed to parse edge: {ErrorMessage}", ex.Message);
-                            return null;
-                        }
-                    })
-                    .Where(e => e != null)
-                    .ToList()!;
-            }
-
-            if (!cleanedNodes.Any() || cleanedEdges == null)
-            {
-                _logger.LogWarning("LLM returned invalid nodes or edges. Falling back to original.");
-                return (allNodes, allEdges);
-            }
-
-            foreach (var node in allNodes)
-            {
-                if (!cleanedNodes.ContainsKey(node.Key))
-                {
-                    _logger.LogWarning("Preserving original node: {NodeId}", node.Key);
-                    cleanedNodes[node.Key] = node.Value;
-                }
-            }
-
-            return (cleanedNodes, cleanedEdges);
+            var validatedFlowchart = new FlowchartDiagram(flows, branchingPoints);
+            _logger.LogInformation("Flowchart validated successfully.");
+            return validatedFlowchart;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "LLM cleanup failed. Falling back to original nodes and edges.");
-            return (allNodes, allEdges);
+            _logger.LogError(ex, "LLM validation failed. Returning original flowchart.");
+            return flowchart;
         }
     }
 

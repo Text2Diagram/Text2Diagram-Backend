@@ -38,6 +38,7 @@ public class BasicFlowExtractor
         var prompt = $"""
             You are an expert FlowchartDiagram Analyzer.
             {Prompts.NodeRules}
+            {Prompts.LanguageRules}
             Analyze the following basic flow description:
             {basicFlowDescription}
             """
@@ -107,6 +108,7 @@ public class BasicFlowExtractor
             You are an expert FlowchartDiagram Analyzer.
             Analyze the following nodes and the basic flow descrition to generate valid edges.
             {Prompts.EdgeRules}
+            {Prompts.LanguageRules}
             Use the following nodes and basic flow as input:
             - Nodes: {JsonSerializer.Serialize(nodes)}
             - Basic flow: {basicFlowDescription}

@@ -78,7 +78,7 @@ public class FlowchartDiagramEvaluator
             Else return the original flowchart without changes.
             Do not include any additional text or explanations in the response.
             Ensure that the returned diagram accurately reflects the use case specification and addresses any identified issues.
-            
+            {Prompts.LanguageRules}
             """;
 
         var response = await _llmService2.GenerateContentAsync(prompt);

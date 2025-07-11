@@ -36,4 +36,12 @@ public static class Prompts
     - Loop nodes: Create edges that loop back to previous nodes.
     - Parallel nodes: Create multiple edges to represent parallel paths.  
     """;
+
+    public const string LanguageRules = """
+    The output must always be in the same language as the input.  
+    Do not translate the content to another language.  
+    If the input is in Vietnamese, respond in Vietnamese.  
+    If the input is in English, respond in English.  
+    This rule must be followed strictly in all cases, regardless of context.
+    """;
 }

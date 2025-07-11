@@ -219,6 +219,7 @@ public class DecisionNodeInserter
             generate a clear and concise decision question to branch to this subflow.
             The question should be phrased such that the {branchingCondition}.
             Avoids redundancy with other decision nodes.
+            {Prompts.LanguageRules}
             """
             +
             """
@@ -249,7 +250,6 @@ public class DecisionNodeInserter
 
         var prompt = $"""
             You are tasked with determining the rejoin point for a subflow in a flowchart. The subflow should reconnect to the basic flow at a logical point based on its purpose and the flowchart's structure.
-
             Basic Flow Nodes: {basicFlowNodesJson}
             Subflow: {subflowJson}
             Insertion Node: {insertionNodeJson}

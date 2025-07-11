@@ -31,6 +31,7 @@ public class AlternativeFlowExtractor
         var prompt = $"""
             You are an expert FlowchartDiagram Analyzer.
             {Prompts.NodeRules}
+            {Prompts.LanguageRules}
             Analyze the following alternative flow description:
             {alternativeFlowDescription}
             Ensure that:
@@ -99,6 +100,7 @@ public class AlternativeFlowExtractor
         You are an expert FlowchartDiagram Analyzer.
         Analyze the following nodes and alternative flow description to generate valid edges.
         {Prompts.EdgeRules}
+        {Prompts.LanguageRules}
         Context:
         - Edges should reflect the sequence of steps in the alternative flow.
         - Decision nodes may branch to different paths (e.g., selecting product options).

@@ -31,6 +31,7 @@ public class ExceptionFlowExtractor
         var prompt = $"""
             You are an expert FlowchartDiagram Analyzer.
             {Prompts.NodeRules}
+            {Prompts.LanguageRules}
             Analyze the following exception flow description:
             {exceptionFlowDescription}
             Ensure that:
@@ -111,6 +112,7 @@ public class ExceptionFlowExtractor
             You are an expert FlowchartDiagram Analyzer.
             Analyze the following nodes and exception flow description to generate valid edges.
             {Prompts.EdgeRules}
+            {Prompts.LanguageRules}
             ### Context:
             - Edges should reflect the sequence of steps in the exception flow, focusing on error conditions or restrictions.
             - Decision nodes may branch to error paths (e.g., invalid selection) or correction paths (e.g., user retries).

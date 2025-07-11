@@ -18,6 +18,7 @@ using Text2Diagram_Backend.Features.ERD.Agents;
 using Text2Diagram_Backend.Features.ERD.Components;
 using Text2Diagram_Backend.Features.Sequence.Agent.Objects;
 using Text2Diagram_Backend.Features.Sequence.NewWay.TempFunc;
+using Text2Diagram_Backend.Features.Flowchart;
 
 namespace Text2Diagram_Backend.Features.UsecaseDiagram;
 
@@ -221,7 +222,7 @@ public class UseCaseSpecAnalyzerForUsecaseDiagram
     {
         string prompt = $"""
         You are an expert assistant that helps regenerate a Use Case Diagram based on user feedback.
-
+        {Prompts.LanguageRules}
         You will receive:
         1. The current Use Case Diagram as JSON.
         2. A feedback message from the user that may suggest adding, removing, or updating actors, use cases, associations, packages, includes, or extends.

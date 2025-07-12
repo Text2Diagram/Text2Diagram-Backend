@@ -16,7 +16,7 @@ Your job:
 - Apply only the necessary changes to the diagram.
 - Do NOT rewrite the entire diagram.
 - Update only the affected lines or blocks based on feedback.
-
+Note:" + Prompts.MermaidRules + @"
 📥 Current Mermaid code:" +
 mermaidCode + @"
 🗣 User Feedback:" +

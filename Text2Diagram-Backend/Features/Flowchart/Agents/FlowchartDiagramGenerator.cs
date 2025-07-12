@@ -110,10 +110,10 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
         }
 
         var flowchart = new FlowchartDiagram(flows, branchingPoints);
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Validating flowchart diagram...");
+        //await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Validating flowchart diagram...");
         var validatedFlowchart = await ValidateDiagram(flowchart);
 
-        await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
+        //await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Generating flowchart diagram...");
         var mermaidCode = GenerateMermaidCode(validatedFlowchart);
 
         string jsonString = JsonSerializer.Serialize(validatedFlowchart, new JsonSerializerOptions

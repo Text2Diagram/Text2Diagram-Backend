@@ -26,7 +26,7 @@ public record RegenerateDiagramRequest(
 
 public record GenerateUseCaseSpecRequest(string Description);
 
-[FirebaseAuthentication]
+//[FirebaseAuthentication]
 [ApiController]
 [Route("[controller]")]
 public class GeneratorsController : ControllerBase

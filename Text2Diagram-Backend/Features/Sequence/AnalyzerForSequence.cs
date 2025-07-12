@@ -80,24 +80,30 @@ public class AnalyzerForSequence
                     //step_3 : identify participants
                     var strCombineFlow = JsonConvert.SerializeObject(listCombineFlow.FirstOrDefault());
                     var promtIdentityParticipant = Step3_IdentifyParticipant.IdentifyParticipants(strCombineFlow);
-                    //chatHistory.AddUserMessage(promtIdentityParticipant);
-                    //var responseParticipants = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
-                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying participants...");
-                    var responseParticipants = await _llmService.GenerateContentAsync(promtIdentityParticipant);
-                    var textContentParticipants = responseParticipants.Content ?? "";
-                    var finalParticipants = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentParticipants);
-                    var listParticipants = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepParticipantDto>(finalParticipants);
+                    //
+                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying participants and conditions...");
+                    //sử dụng thread
+                    var IdentityParticipantTask = Task.Run(() =>
+						_llmService.GenerateContentAsync(promtIdentityParticipant)
+                        .ContinueWith((res =>
+							DeserializeLLMResponseFunc.DeserializeLLMResponse<StepParticipantDto>(
+                                ExtractJsonFromTextHelper.ExtractJsonFromText(res.Result.Content)
+                                ))
+                            ));
                     //step_4 : Identify conditions
                     var promtIdentifyConditions = Step4_IdentifyCondition.IdentifyCondition(strCombineFlow);
-                    //chatHistory.AddUserMessage(promtIdentifyConditions);
-                    //var responseConditions = await chatService.GetChatMessageContentAsync(chatHistory, kernel: kernel);
-                    await _hubContext.Clients.Client(SignalRContext.ConnectionId).SendAsync("StepGenerated", "Identifying conditions...");
-                    var responseConditions = await _llmService.GenerateContentAsync(promtIdentifyConditions);
-                    var textContentConditions = responseConditions.Content ?? "";
-                    var finalConditions = ExtractJsonFromTextHelper.ExtractJsonFromText(textContentConditions);
-                    var listConditions = DeserializeLLMResponseFunc.DeserializeLLMResponse<StepControlTypeDto>(finalConditions);
+                    var IdentityConditionTask = Task.Run(() =>
+                        _llmService.GenerateContentAsync(promtIdentifyConditions)
+                        .ContinueWith((res =>
+                            DeserializeLLMResponseFunc.DeserializeLLMResponse<StepControlTypeDto>(
+                                ExtractJsonFromTextHelper.ExtractJsonFromText(res.Result.Content)
+                                ))));
                     //step_5 : Combine LLM responses
-                    var promtCombineLLMResponse = Step5_CombineLLMResult.CombineLLMResults(listCombineFlow.FirstOrDefault(), listParticipants, listConditions);
+
+                    await Task.WhenAll(IdentityParticipantTask, IdentityConditionTask);
+					var listParticipants = IdentityParticipantTask.Result;
+                    var listConditions = IdentityConditionTask.Result;
+					var promtCombineLLMResponse = Step5_CombineLLMResult.CombineLLMResults(listCombineFlow.FirstOrDefault(), listParticipants, listConditions);
                     // step_6 : Generate mermaid syntax for sequence diagram
 
                     var promtFinalGenerateMermaid = Step6_GenerateMermaidCode.GenerateMermaidCode(promtCombineLLMResponse);

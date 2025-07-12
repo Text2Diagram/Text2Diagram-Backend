@@ -22,6 +22,7 @@ Each object has:
 - `Message`: Description of the interaction
 - `ActionType`: One of: `""normal""`, `""alt""`, `""loop""`, `""par""`, `""critical""`
 - `Condition`: Optional string, used for alt/loop/critical control blocks
+Note:" + Prompts.MermaidRules + @"
 
 📌 Here is an example input:
 ```json

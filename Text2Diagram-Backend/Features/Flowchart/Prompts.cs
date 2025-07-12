@@ -44,4 +44,22 @@ public static class Prompts
     If the input is in English, respond in English.  
     This rule must be followed strictly in all cases, regardless of context.
     """;
+
+    public const string MermaidRules = """
+Avoid using the wrong mermaid syntax such as:
+--
+alt Some condition
+    Actor1->>Actor2: Message
+else
+    break ❌ // => đây là lệnh sai cú pháp Mermaid
+end
+--
+If there’s no meaningful action in an `else`, you can use a comment such as:
+
+    alt Some condition
+        Actor1->>Actor2: Message
+    else
+        %%No action needed
+    end
+""";
 }

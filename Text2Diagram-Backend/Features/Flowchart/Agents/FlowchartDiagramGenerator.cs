@@ -554,7 +554,7 @@ public class FlowchartDiagramGenerator : IDiagramGenerator
             NodeType.Decision => $"{id}{{{content}}}",
             NodeType.InputOutput or NodeType.Document => $"{id}[/\"{content}\"/]",
             NodeType.DataStore => $"{id}[(\"{content}\")]",
-            NodeType.Comment => $"{id}:::note[{content}]",
+            NodeType.Comment => $"{id}::note[{content}]",
             _ => $"{id}[{content}]"
         };
     }
